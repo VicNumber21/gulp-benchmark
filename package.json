@@ -1,0 +1,25 @@
+{
+  "name": "gulp-benchmark",
+  "version": "0.0.0",
+  "description": "Benchmark test runner for gulp with full control on input and output",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/VicNumber21/gulp-benchmark.git"
+  },
+  "keywords": [
+    "gulpplugin",
+    "benchmark",
+    "performance",
+    "test"
+  ],
+  "author": "Victor Portnov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/VicNumber21/gulp-benchmark/issues"
+  },
+  "homepage": "https://github.com/VicNumber21/gulp-benchmark"
+}
