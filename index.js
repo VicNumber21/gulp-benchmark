@@ -9,6 +9,11 @@ var log = gutil.log;
 
 var pluginName = 'gulp-benchmark';
 
+var caption = function (suite) {
+  var name = suite.name || suite.id;
+  return name? name + ' from ' + suite.path: suite.path;
+};
+
 var Bench = {
   from_benchmark: function () {
     return through.obj(function (file, enc, cb) {
@@ -25,10 +30,7 @@ var Bench = {
 
   run: function () {
     return through.obj(function (suite, enc, cb) {
-      var name = suite.name || suite.id;
-      var caption = name? name + ' from ' + suite.path: suite.path;
-
-      log('Running ' + caption + '...');
+      log('Running ' + caption(suite) + ' ...');
 
       var onError = function (err) {
         var pluginError = new PluginError(pluginName, err, {showStack: true});
@@ -55,6 +57,38 @@ var Bench = {
       });
 
       suite.run();
+    });
+  },
+
+  total: function (etalonName) {
+    return through.obj(function (suite, enc, cb) {
+      var results = suite.sort(function (a, b) {
+        return b.hz - a.hz;
+      });
+
+      var etalonIndex = results.pluck('name').indexOf(etalonName);
+      var etalon = etalonIndex < 0? null: results[etalonIndex];
+      //TODO throw error if etalon not found?
+
+      log('Total for ' + caption(suite));
+
+      results.forEach(function (test, index) {
+        var output = '  ';
+
+        if (index < etalonIndex) {
+          output += test.name + ' ' + (test.hz / etalon.hz).toFixed(3) + 'x times faster';
+        }
+        else if (index > etalonIndex) {
+          output += test.name + ' ' + (etalon.hz / test.hz).toFixed(3) + 'x times slower';
+        }
+        else {
+          output += gutil.colors.green(etalon.name);
+        }
+
+        log(output);
+      });
+
+      cb(null, suite);
     });
   }
 };
