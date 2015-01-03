@@ -7,10 +7,10 @@ var File = require('gulp-util').File;
 var Benchmark = require('benchmark');
 
 
-it('load.benchmark', function (cb) {
+it('from_benchmark', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load.benchmark();
+  var stream = bench.from_benchmark();
 
   stream.on('data', function (output) {
     try {
@@ -23,5 +23,26 @@ it('load.benchmark', function (cb) {
   });
 
   stream.write(new File({path: './test-data/benchmark.js'}));
+  stream.end();
+});
+
+it('run', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.run()
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(output).to.not.have.property('error');
+      expect(output).to.have.length(3);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(require('./test-data/benchmark.js'));
   stream.end();
 });

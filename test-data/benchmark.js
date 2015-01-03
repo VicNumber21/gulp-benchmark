@@ -1,7 +1,7 @@
 var Benchmark = require('benchmark');
 
 
-var suite = new Benchmark.Suite;
+var suite = new Benchmark.Suite('Search');
 
 suite.add('RegExp#test', function() {
     /o/.test('Hello World!');
