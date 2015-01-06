@@ -49,10 +49,10 @@ it('run', function (cb) {
   stream.end();
 });
 
-it('total', function (cb) {
+it('report', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.total('RegExp#test');
+  var stream = bench.report(bench.consoleReporter('RegExp#test'));
 
   stream.on('data', function (output) {
     try {

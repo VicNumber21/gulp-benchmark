@@ -14,6 +14,73 @@ var caption = function (suite) {
   return name? name + ' from ' + suite.path: suite.path;
 };
 
+var consoleLogger = {
+  onStart: function (suite) {
+    log('Running ' + caption(suite) + ' ...');
+  },
+
+  onCycle: function (event) {
+    var target = event.target || this;
+    var suffix = target.error? gutil.colors.red(' error'): '';
+    log('  ' + target + suffix);
+  },
+
+  onComplete: function (suite) {
+
+  }
+};
+
+var consoleReporter = function (etalonName) {
+  return function (suite) {
+    var passed = [], failed = [];
+
+    suite.forEach(function (test) {
+      var container = test.error? failed: passed;
+      container.push(test);
+    });
+
+    var results = passed.sort(function (a, b) {
+      return b.hz - a.hz;
+    });
+
+    var etalonIndex = results.map(function (test) { return test.name; }).indexOf(etalonName);
+    var etalon = (etalonIndex < 0)? results[0]: results[etalonIndex];
+    var etalonHz = etalon? etalon.hz: 0;
+
+    log(caption(suite) + ' (' + gutil.colors.green('passed') + ': ' + passed.length + ' ,'
+                       + gutil.colors.red('failed') + ': ' + failed.length + ')');
+
+    if (passed.length > 0) {
+      log(gutil.colors.green(' Passed') + ':');
+
+      results.forEach(function (test, index) {
+        var output = '  ' + test.name;
+
+        if (index < etalonIndex) {
+          output += ' ' + (test.hz / etalonHz).toFixed(2) + 'x times faster';
+        }
+        else if (index > etalonIndex) {
+          output += ' ' + (etalonHz / test.hz).toFixed(2) + 'x times slower';
+        }
+        else {
+          output = gutil.colors.yellow(output);
+        }
+
+        log(output);
+      });
+    }
+
+    if (failed.length > 0) {
+      log(gutil.colors.red(' Failed') + ':');
+
+      failed.forEach(function (test) {
+        log('  ' + test.name + ': ' + test.error);
+      });
+    }
+  };
+};
+
+
 var Bench = {
   from_benchmark: function () {
     return through.obj(function (file, enc, cb) {
@@ -28,66 +95,38 @@ var Bench = {
     });
   },
 
-  run: function () {
-    return through.obj(function (suite, enc, cb) {
-      log('Running ' + caption(suite) + ' ...');
+  consoleLogger: consoleLogger,
+  run: function (logger) {
+    var logger = logger || Bench.consoleLogger;
 
-      var onError = function (err) {
-        var pluginError = new PluginError(pluginName, err, {showStack: true});
-        log(pluginError.toString());
-        cb(err);
-      };
+    return through.obj(function (suite, enc, cb) {
+      logger.onStart(suite);
 
       suite.on('cycle', function(event) {
-        var target = event.target || this;
-        log('  ' + target);
+        logger.onCycle(event);
       });
 
       suite.on('complete', function() {
         if (this.error) {
-          onError(this.error);
+          var pluginError = new PluginError(pluginName, this.error, {showStack: true});
+          log(pluginError.toString());
+          cb(err);
         }
         else {
+          logger.onComplete(this);
           cb(null, this);
         }
-      });
-
-      suite.on('error', function(event) {
-        onError(event.target.error);
       });
 
       suite.run();
     });
   },
 
-  total: function (etalonName) {
+  consoleReporter: consoleReporter,
+  report: function (reporter) {
+    reporter = reporter || consoleReporter();
     return through.obj(function (suite, enc, cb) {
-      var results = suite.sort(function (a, b) {
-        return b.hz - a.hz;
-      });
-
-      var etalonIndex = results.pluck('name').indexOf(etalonName);
-      var etalon = etalonIndex < 0? null: results[etalonIndex];
-      //TODO throw error if etalon not found?
-
-      log('Total for ' + caption(suite));
-
-      results.forEach(function (test, index) {
-        var output = '  ';
-
-        if (index < etalonIndex) {
-          output += test.name + ' ' + (test.hz / etalon.hz).toFixed(3) + 'x times faster';
-        }
-        else if (index > etalonIndex) {
-          output += test.name + ' ' + (etalon.hz / test.hz).toFixed(3) + 'x times slower';
-        }
-        else {
-          output += gutil.colors.green(etalon.name);
-        }
-
-        log(output);
-      });
-
+      reporter(suite);
       cb(null, suite);
     });
   }
