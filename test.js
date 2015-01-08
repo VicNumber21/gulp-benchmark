@@ -27,6 +27,102 @@ it('from_benchmark', function (cb) {
   stream.end();
 });
 
+it('from_grunt_benchmark - single function', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_grunt_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-single-function.js'}));
+  stream.end();
+});
+
+it('from_grunt_benchmark - single test with options', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_grunt_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-single-test-with-options.js'}));
+  stream.end();
+});
+
+it('from_grunt_benchmark - test suite with array of functions', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_grunt_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      globalTestSuite = output;
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-array-of-functions.js'}));
+  stream.end();
+});
+
+it('from_grunt_benchmark - test suite with array of objects', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_grunt_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-array-of-objects.js'}));
+  stream.end();
+});
+
+it('from_grunt_benchmark - test suite with object', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_grunt_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-object.js'}));
+  stream.end();
+});
+
 it('run', function (cb) {
   this.timeout(20000);
 
@@ -45,14 +141,15 @@ it('run', function (cb) {
     }
   });
 
-  stream.write(require('./test-data/benchmark.js'));
+  //stream.write(require('./test-data/benchmark.js'));
+  stream.write(globalTestSuite);
   stream.end();
 });
 
 it('report', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.report(bench.consoleReporter('RegExp#test'));
+  var stream = bench.report(bench.consoleReporter());
 
   stream.on('data', function (output) {
     try {
