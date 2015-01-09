@@ -8,7 +8,27 @@ var Benchmark = require('benchmark');
 
 var globalTestSuite;
 
-it('from_benchmark', function (cb) {
+it('from_benchmark - single', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.from_benchmark();
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      globalTestSuite = output;
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/benchmark-single.js'}));
+  stream.end();
+});
+
+it('from_benchmark - suite', function (cb) {
   this.timeout(20000);
 
   var stream = bench.from_benchmark();
@@ -23,7 +43,7 @@ it('from_benchmark', function (cb) {
     }
   });
 
-  stream.write(new File({path: './test-data/benchmark.js'}));
+  stream.write(new File({path: './test-data/benchmark-suite.js'}));
   stream.end();
 });
 
@@ -73,7 +93,6 @@ it('from_grunt_benchmark - test suite with array of functions', function (cb) {
   stream.on('data', function (output) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
-      globalTestSuite = output;
       cb();
     }
     catch (err) {
@@ -132,7 +151,6 @@ it('run', function (cb) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
       expect(output).to.not.have.property('error');
-      expect(output).to.have.length(3);
       globalTestSuite = output; //TODO this is ugly; how to rework
       cb();
     }
@@ -155,7 +173,6 @@ it('report', function (cb) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
       expect(output).to.not.have.property('error');
-      expect(output).to.have.length(3);
       cb();
     }
     catch (err) {

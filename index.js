@@ -88,11 +88,19 @@ var consoleReporter = function (etalonName) {
 //TODO split into several files
 var Bench = {
   from_benchmark: function () {
-    //TODO add support of single benchmark
-    //     either convert it into suite or support single benchmark in run
     return through.obj(function (file, enc, cb) {
       try {
-        var suite = require(path.resolve(process.cwd(), file.path));
+        var bench = require(path.resolve(process.cwd(), file.path));
+        var suite;
+
+        if (bench instanceof Benchmark.Suite) {
+          suite = bench;
+        }
+        else if (bench instanceof Benchmark) {
+          suite = new Benchmark.Suite(path.basename(file.path, '.js'));
+          suite.add(bench);
+        }
+
         suite.path = file.path;
         cb(null, suite);
       }
