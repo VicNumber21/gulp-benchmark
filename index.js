@@ -87,19 +87,54 @@ var consoleReporter = function (etalonName) {
 
 //TODO split into several files
 var Bench = {
-  from_benchmark: function () {
+  load: function () {
     return through.obj(function (file, enc, cb) {
       try {
-        var bench = require(path.resolve(process.cwd(), file.path));
+        var description = require(path.resolve(process.cwd(), file.path));
         var suite;
+        var options = {};
+        var tests = [];
 
-        if (bench instanceof Benchmark.Suite) {
-          suite = bench;
+        if (description instanceof Benchmark.Suite) {
+          suite = description;
         }
-        else if (bench instanceof Benchmark) {
-          suite = new Benchmark.Suite(path.basename(file.path, '.js'));
-          suite.add(bench);
+        else if (description instanceof Benchmark) {
+          options.name = path.basename(file.path, '.js');
+          tests.push(description);
         }
+        else if (_.isFunction(description)) {
+          var name = path.basename(file.path, '.js');
+          options.name = name;
+
+          tests.push({
+            name: name,
+            fn: description
+          });
+        }
+        else if (_.isFunction(description.fn)) {
+          options.name = path.basename(file.path, '.js');
+          var test = _.extend({}, description);
+          test.name = test.name || options.name;
+          tests.push(test);
+        }
+        else if (_.isObject(description.tests)) {
+          options = _.extend({}, description);
+          delete options.tests;
+
+          tests = _.map(description.tests, function (test, index) {
+            test = _.isFunction(test)? {fn: test}: test;
+            var name = _.isNumber(index)? '<Test #' + (index + 1) + '>': index;
+            test.name = test.name || name;
+            return test;
+          });
+        }
+
+        suite = suite || new Benchmark.Suite(options);
+        suite.path = file.path;
+
+        tests.forEach(function (test) {
+          suite.add(test);
+        });
 
         suite.path = file.path;
         cb(null, suite);
@@ -147,55 +182,6 @@ var Bench = {
     return through.obj(function (suite, enc, cb) {
       reporter(suite);
       cb(null, suite);
-    });
-  },
-
-  from_grunt_benchmark: function () {
-    return through.obj(function (file, enc, cb) {
-      try {
-        var description = require(path.resolve(process.cwd(), file.path));
-        var options = {};
-        var tests = [];
-
-        if (_.isFunction(description)) {
-          var name = path.basename(file.path, '.js');
-          options.name = name;
-
-          tests.push({
-            name: name,
-            fn: description
-          });
-        }
-        else if (_.isFunction(description.fn)) {
-          options.name = path.basename(file.path, '.js');
-          var test = _.extend({}, description);
-          test.name = test.name || options.name;
-          tests.push(test);
-        }
-        else if (_.isObject(description.tests)) {
-          options = _.extend({}, description);
-          delete options.tests;
-
-          tests = _.map(description.tests, function (test, index) {
-            test = _.isFunction(test)? {fn: test}: test;
-            var name = _.isNumber(index)? '<Test #' + (index + 1) + '>': index;
-            test.name = test.name || name;
-            return test;
-          });
-        }
-
-        var suite = new Benchmark.Suite(options);
-        suite.path = file.path;
-
-        tests.forEach(function (test) {
-          suite.add(test);
-        });
-
-        cb(null, suite);
-      }
-      catch (err) {
-        cb(err);
-      }
     });
   }
 };

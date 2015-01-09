@@ -8,10 +8,10 @@ var Benchmark = require('benchmark');
 
 var globalTestSuite;
 
-it('from_benchmark - single', function (cb) {
+it('load - single benchmark', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -28,10 +28,10 @@ it('from_benchmark - single', function (cb) {
   stream.end();
 });
 
-it('from_benchmark - suite', function (cb) {
+it('load - benchmark suite', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -47,10 +47,10 @@ it('from_benchmark - suite', function (cb) {
   stream.end();
 });
 
-it('from_grunt_benchmark - single function', function (cb) {
+it('load - grunt-benchmark - single function', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_grunt_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -66,10 +66,10 @@ it('from_grunt_benchmark - single function', function (cb) {
   stream.end();
 });
 
-it('from_grunt_benchmark - single test with options', function (cb) {
+it('load - grunt-benchmark - single test with options', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_grunt_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -85,10 +85,10 @@ it('from_grunt_benchmark - single test with options', function (cb) {
   stream.end();
 });
 
-it('from_grunt_benchmark - test suite with array of functions', function (cb) {
+it('load - grunt-benchmark - test suite with array of functions', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_grunt_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -104,10 +104,10 @@ it('from_grunt_benchmark - test suite with array of functions', function (cb) {
   stream.end();
 });
 
-it('from_grunt_benchmark - test suite with array of objects', function (cb) {
+it('load - grunt-benchmark - test suite with array of objects', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_grunt_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
@@ -123,10 +123,10 @@ it('from_grunt_benchmark - test suite with array of objects', function (cb) {
   stream.end();
 });
 
-it('from_grunt_benchmark - test suite with object', function (cb) {
+it('load - grunt-benchmark - test suite with object', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.from_grunt_benchmark();
+  var stream = bench.load();
 
   stream.on('data', function (output) {
     try {
