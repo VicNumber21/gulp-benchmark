@@ -16,7 +16,6 @@ it('load - single benchmark', function (cb) {
   stream.on('data', function (output) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
-      globalTestSuite = output;
       cb();
     }
     catch (err) {
@@ -145,9 +144,9 @@ it('load - grunt-benchmark - test suite with object', function (cb) {
 it('run', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.run()
+  var runStream = bench.run()
 
-  stream.on('data', function (output) {
+  runStream.on('data', function (output) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
       expect(output).to.not.have.property('error');
@@ -159,9 +158,15 @@ it('run', function (cb) {
     }
   });
 
-  //stream.write(require('./test-data/benchmark.js'));
-  stream.write(globalTestSuite);
-  stream.end();
+  var loadStream = bench.load();
+
+  loadStream.on('data', function(output) {
+    runStream.write(output);
+    runStream.end();
+  });
+
+  loadStream.write(new File({path: './test-data/grunt-benchmark-single-test-with-options.js'}));
+  loadStream.end();
 });
 
 it('report', function (cb) {
