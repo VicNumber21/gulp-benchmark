@@ -150,7 +150,6 @@ it('run', function (cb) {
     try {
       expect(output).to.be.instanceof(Benchmark.Suite);
       expect(output).to.not.have.property('error');
-      globalTestSuite = output; //TODO this is ugly; how to rework
       cb();
     }
     catch (err) {
@@ -169,22 +168,8 @@ it('run', function (cb) {
   loadStream.end();
 });
 
-it('report', function (cb) {
-  this.timeout(20000);
-
-  var stream = bench.report(bench.consoleReporter());
-
-  stream.on('data', function (output) {
-    try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
-      expect(output).to.not.have.property('error');
-      cb();
-    }
-    catch (err) {
-      cb(err);
-    }
-  });
-
-  stream.write(globalTestSuite);
+it('report - etalon', function () {
+  var stream = bench.report(bench.reporters.etalon('RegExp#test'));
+  stream.write(require('./test-data/run-statistic'));
   stream.end();
 });

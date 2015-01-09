@@ -7,6 +7,10 @@ var gutil = require('gulp-util');
 var _ = require('lodash');
 var PluginError = gutil.PluginError;
 var log = gutil.log;
+var green = gutil.colors.green;
+var red = gutil.colors.red;
+var yellow = gutil.colors.yellow;
+var File = gutil.File;
 
 
 var pluginName = 'gulp-benchmark';
@@ -23,7 +27,7 @@ var consoleLogger = {
 
   onCycle: function (event) {
     var target = event.target || this;
-    var suffix = target.error? gutil.colors.red(' error'): '';
+    var suffix = target.error? red(' error'): '';
     log('  ' + target + suffix);
   },
 
@@ -32,30 +36,31 @@ var consoleLogger = {
   }
 };
 
-//TODO rename to etalonReporter
 //TODO create gruntBenchmarkReporter
-var consoleReporter = function (etalonName) {
-  return function (suite) {
-    var passed = [], failed = [];
+var etalonReporter = function (etalonName) {
+  return function (data) {
 
-    suite.forEach(function (test) {
-      var container = test.error? failed: passed;
-      container.push(test);
+    var total = _.toArray(data);
+    var split = _.groupBy(total, function (test) {
+      return _.isUndefined(test.error)? 'passed': 'failed';
     });
+
+    var passed = split['passed'] || [];
+    var failed = split['failed'] || [];
 
     var results = passed.sort(function (a, b) {
       return b.hz - a.hz;
     });
 
-    var etalonIndex = _.isString(etalonName)? results.map(function (test) { return test.name; }).indexOf(etalonName): 0;
+    var etalonIndex = _.isString(etalonName)? _.pluck(results, 'name').indexOf(etalonName): 0;
     var etalon = (etalonIndex < 0)? results[0]: results[etalonIndex];
     var etalonHz = etalon? etalon.hz: 0;
 
-    log(caption(suite) + ' (' + gutil.colors.green('passed') + ': ' + passed.length + ' ,'
-                       + gutil.colors.red('failed') + ': ' + failed.length + ')');
+    log(caption(data) + ' (' + green('passed') + ': ' + passed.length + ' ,'
+                          + red('failed') + ': ' + failed.length + ')');
 
     if (passed.length > 0) {
-      log(gutil.colors.green(' Passed') + ':');
+      log(green(' Passed') + ':');
 
       results.forEach(function (test, index) {
         var output = '  ' + test.name;
@@ -67,7 +72,7 @@ var consoleReporter = function (etalonName) {
           output += ' ' + (etalonHz / test.hz).toFixed(2) + 'x times slower';
         }
         else {
-          output = gutil.colors.yellow(output);
+          output = yellow(output);
         }
 
         log(output);
@@ -75,12 +80,14 @@ var consoleReporter = function (etalonName) {
     }
 
     if (failed.length > 0) {
-      log(gutil.colors.red(' Failed') + ':');
+      log(red(' Failed') + ':');
 
       failed.forEach(function (test) {
         log('  ' + test.name + ': ' + test.error);
       });
     }
+
+    return null;
   };
 };
 
@@ -150,38 +157,61 @@ var Bench = {
     var logger = logger || Bench.consoleLogger;
 
     return through.obj(function (suite, enc, cb) {
-      logger.onStart(suite);
+      try {
+        logger.onStart(suite);
 
-      suite.on('cycle', function(event) {
-        logger.onCycle(event);
-      });
+        suite.on('cycle', function (event) {
+          logger.onCycle(event);
+        });
 
-      suite.on('complete', function() {
-        if (this.error) {
-          var pluginError = new PluginError(pluginName, this.error, {showStack: true});
-          log(pluginError.toString());
-          cb(err);
-        }
-        else {
-          //TODO copy required fields (name, hs, cycles, count, error, stats, times) into object passed to the rest
-          logger.onComplete(this);
-          cb(null, this);
-        }
-      });
+        suite.on('complete', function () {
+          if (this.error) {
+            var pluginError = new PluginError(pluginName, this.error, {showStack: true});
+            log(pluginError.toString());
+            cb(err);
+          }
+          else {
+            logger.onComplete(this);
+            cb(null, this);
+          }
+        });
 
-      suite.run();
+        suite.run();
+      }
+      catch (err) {
+        cb(err);
+      }
     });
   },
 
-  //TODO rename and create field of reporters object
   //TODO add reporters for csv and json (and yaml?)
-  consoleReporter: consoleReporter,
-  report: function (reporter) {
-    //TODO take array of reporters, map and push results (if not null / undefined) into stream
-    reporter = reporter || consoleReporter();
-    return through.obj(function (suite, enc, cb) {
-      reporter(suite);
-      cb(null, suite);
+  reporters: {
+    etalon: etalonReporter
+  },
+
+  report: function (reporters) {
+    reporters = reporters || [Bench.reporters.etalon()];
+    reporters = _.isArray(reporters)? reporters: [reporters];
+
+    return through.obj(function (data, enc, cb) {
+      try {
+        var files = _.map(reporters, function (reporter) {
+          return reporter(data);
+        });
+
+        var stream = this;
+
+        _.forEach(files, function (file) {
+          if (file instanceof File) {
+            stream.push(file);
+          }
+        });
+
+        cb(null);
+      }
+      catch (err) {
+        cb(err);
+      }
     });
   }
 };
