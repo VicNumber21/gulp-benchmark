@@ -17,7 +17,7 @@ var pluginName = 'gulp-benchmark';
 
 var caption = function (suite) {
   var name = suite.name || suite.id;
-  return name? name + ' from ' + suite.path: suite.path;
+  return name? '"' + name + '" from ' + suite.path: suite.path;
 };
 
 var consoleLogger = {
@@ -63,15 +63,16 @@ var etalonReporter = function (etalonName) {
       log(green(' Passed') + ':');
 
       results.forEach(function (test, index) {
-        var output = '  ' + test.name;
+        var output = '  "' + test.name + '"';
 
         if (index < etalonIndex) {
-          output += ' ' + (test.hz / etalonHz).toFixed(2) + 'x times faster';
+          output += ' at ' + (test.hz / etalonHz).toFixed(2) + 'x faster';
         }
         else if (index > etalonIndex) {
-          output += ' ' + (etalonHz / test.hz).toFixed(2) + 'x times slower';
+          output += ' at ' + (etalonHz / test.hz).toFixed(2) + 'x slower';
         }
         else {
+          output += ' is etalon';
           output = yellow(output);
         }
 
