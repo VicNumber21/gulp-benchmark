@@ -85,8 +85,6 @@ var etalonReporter = function (etalonName) {
         log('  ' + test.name + ': ' + test.error);
       });
     }
-
-    return null;
   };
 };
 
@@ -117,8 +115,41 @@ var fastestReporter = function () {
       var timesStr = Benchmark.formatNumber(times.toFixed(times < 2 ? 2 : 1));
       log('Fastest test is ' + first.name + ' at ' + timesStr + 'x faster than ' + second.name);
     }
+  };
+};
 
-    return null;
+var jsonReporter = function (options) {
+  options = options || {};
+
+  return function (data, storageRef) {
+    if (!storageRef.storage) {
+      storageRef.storage = {
+        records: [],
+        path: options.path || './benchmark-results.json',
+        contents: function () {
+          return JSON.stringify(this.records, null, '  ');
+        }
+      };
+    }
+
+    var total = _(data).toArray().compact().value();
+
+    var record = {
+      name: data.name,
+      results: _.map(total, function (test) {
+        return {
+          name : test.name,
+          times: test.times,
+          stats: test.stats,
+          error : test.error,
+          count : test.count,
+          cycles: test.cycles,
+          hz : test.hz
+        };
+      })
+    };
+
+    storageRef.storage.records.push(record);
   };
 };
 
@@ -215,31 +246,48 @@ var Bench = {
     });
   },
 
-  //TODO add reporters for csv and json (and yaml?)
+  //TODO add reporters for csv
   reporters: {
     etalon: etalonReporter,
-    fastest: fastestReporter
+    fastest: fastestReporter,
+    json: jsonReporter
   },
 
   report: function (reporters) {
     reporters = reporters || [Bench.reporters.etalon()];
     reporters = _.isArray(reporters)? reporters: [reporters];
+    var outputs = [];
 
     return through.obj(function (data, enc, cb) {
       try {
-        var files = _.map(reporters, function (reporter) {
-          return reporter(data);
+        _.forEach(reporters, function (reporter, index) {
+          var storageRef = outputs[index] = outputs[index] || { storage: null };
+
+          reporter(data, storageRef);
         });
 
+        cb();
+      }
+      catch (err) {
+        cb(err);
+      }
+    }, function (cb) {
+      try {
         var stream = this;
 
-        _.forEach(files, function (file) {
-          if (file instanceof File) {
-            stream.push(file);
+        _.forEach(outputs, function (storageRef) {
+          var storage = storageRef.storage;
+
+          if (storage) {
+            stream.push(new File ({
+              cwd: process.cwd(),
+              path: storage.path,
+              contents: new Buffer(storage.contents())
+            }));
           }
         });
 
-        cb(null);
+        cb();
       }
       catch (err) {
         cb(err);
