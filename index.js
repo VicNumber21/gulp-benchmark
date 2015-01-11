@@ -153,6 +153,36 @@ var jsonReporter = function (options) {
   };
 };
 
+//TODO improve csv reporter - add multiple suite support as it was done for json
+var csvReporter = function (options) {
+  options = options || {};
+
+  return function (data, storageRef) {
+    if (!storageRef.storage) {
+      storageRef.storage = {
+        records: 'name,date,error,count,cycles,hz\n',
+        path: options.path || './benchmark-results.csv',
+        contents: function () {
+          return this.records;
+        }
+      };
+    }
+
+    var total = _(data).toArray().compact().value();
+
+    storageRef.storage.records += data.name + '\n' + _.map(total, function (test) {
+      return [
+          '"' + test.name + '"',
+          test.times.timeStamp,
+          '"' + test.error + '"',
+          test.count,
+          test.cycles,
+          test.hz
+        ].join(',') + '\n';
+    });
+  };
+};
+
 
 //TODO split into several files
 var Bench = {
@@ -246,11 +276,11 @@ var Bench = {
     });
   },
 
-  //TODO add reporters for csv
   reporters: {
     etalon: etalonReporter,
     fastest: fastestReporter,
-    json: jsonReporter
+    json: jsonReporter,
+    csv: csvReporter
   },
 
   report: function (reporters) {
