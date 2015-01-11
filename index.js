@@ -36,11 +36,9 @@ var consoleLogger = {
   }
 };
 
-//TODO create gruntBenchmarkReporter
 var etalonReporter = function (etalonName) {
   return function (data) {
-
-    var total = _.toArray(data);
+    var total = _(data).toArray().compact().value();
     var split = _.groupBy(total, function (test) {
       return _.isUndefined(test.error)? 'passed': 'failed';
     });
@@ -86,6 +84,38 @@ var etalonReporter = function (etalonName) {
       failed.forEach(function (test) {
         log('  ' + test.name + ': ' + test.error);
       });
+    }
+
+    return null;
+  };
+};
+
+var fastestReporter = function () {
+  return function (data) {
+    var total = _(data).toArray().compact().value();
+    var split = _.groupBy(total, function (test) {
+      return _.isUndefined(test.error) ? 'passed' : 'failed';
+    });
+
+    var passed = split['passed'] || [];
+    var failed = split['failed'] || [];
+
+    var results = passed.sort(function (a, b) {
+      return b.hz - a.hz;
+    });
+
+    if (results.length === 0) {
+      log('No passed tests');
+    }
+    else if (results.length === 1) {
+      log('Only test passed: ' + Benchmark.prototype.toString.call(results[0]));
+    }
+    else {
+      var first = results[0];
+      var second = results[1];
+      var times = first.hz / second.hz;
+      var timesStr = Benchmark.formatNumber(times.toFixed(times < 2 ? 2 : 1));
+      log('Fastest test is ' + first.name + ' at ' + timesStr + 'x faster than ' + second.name);
     }
 
     return null;
@@ -187,7 +217,8 @@ var Bench = {
 
   //TODO add reporters for csv and json (and yaml?)
   reporters: {
-    etalon: etalonReporter
+    etalon: etalonReporter,
+    fastest: fastestReporter
   },
 
   report: function (reporters) {

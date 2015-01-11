@@ -173,3 +173,9 @@ it('report - etalon', function () {
   stream.write(require('./test-data/run-statistic'));
   stream.end();
 });
+
+it('report - fastest', function () {
+  var stream = bench.report(bench.reporters.fastest());
+  stream.write(require('./test-data/run-statistic'));
+  stream.end();
+});
