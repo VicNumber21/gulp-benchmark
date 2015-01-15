@@ -31,8 +31,7 @@ var consoleLogger = {
     log('  ' + target + suffix);
   },
 
-  onComplete: function (suite) {
-
+  onComplete: function () {
   }
 };
 
@@ -43,8 +42,8 @@ var etalonReporter = function (etalonName) {
       return _.isUndefined(test.error)? 'passed': 'failed';
     });
 
-    var passed = split['passed'] || [];
-    var failed = split['failed'] || [];
+    var passed = split.passed || [];
+    var failed = split.failed || [];
 
     var results = passed.sort(function (a, b) {
       return b.hz - a.hz;
@@ -54,8 +53,8 @@ var etalonReporter = function (etalonName) {
     var etalon = (etalonIndex < 0)? results[0]: results[etalonIndex];
     var etalonHz = etalon? etalon.hz: 0;
 
-    log(caption(data) + ' (' + green('passed') + ': ' + passed.length + ' ,'
-                          + red('failed') + ': ' + failed.length + ')');
+    log(caption(data) + ' (' + green('passed') + ': ' + passed.length + ' ,' +
+                               red('failed') + ': ' + failed.length + ')');
 
     if (passed.length > 0) {
       log(green(' Passed') + ':');
@@ -95,8 +94,8 @@ var fastestReporter = function () {
       return _.isUndefined(test.error) ? 'passed' : 'failed';
     });
 
-    var passed = split['passed'] || [];
-    var failed = split['failed'] || [];
+    var passed = split.passed || [];
+    var failed = split.failed || [];
 
     var results = passed.sort(function (a, b) {
       return b.hz - a.hz;
@@ -246,7 +245,7 @@ var Bench = {
 
   consoleLogger: consoleLogger,
   run: function (logger) {
-    var logger = logger || Bench.consoleLogger;
+    logger = logger || Bench.consoleLogger;
 
     return through.obj(function (suite, enc, cb) {
       try {
@@ -260,7 +259,7 @@ var Bench = {
           if (this.error) {
             var pluginError = new PluginError(pluginName, this.error, {showStack: true});
             log(pluginError.toString());
-            cb(err);
+            cb(this.error);
           }
           else {
             logger.onComplete(this);

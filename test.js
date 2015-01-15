@@ -1,3 +1,5 @@
+/*global it */
+
 'use strict';
 
 var bench = require('./index');
@@ -6,7 +8,6 @@ var expect = require('chai').expect;
 var File = require('gulp-util').File;
 var Benchmark = require('benchmark');
 
-var globalTestSuite;
 
 it('load - single benchmark', function (cb) {
   this.timeout(20000);
@@ -144,7 +145,7 @@ it('load - grunt-benchmark - test suite with object', function (cb) {
 it('run', function (cb) {
   this.timeout(20000);
 
-  var runStream = bench.run()
+  var runStream = bench.run();
 
   runStream.on('data', function (output) {
     try {
@@ -194,7 +195,7 @@ it('report - json', function (cb) {
   stream.on('data', function (output) {
     try {
       expect(output).to.be.instanceof(File);
-      expect(output.path).to.be.equal('./benchmark-results.json')
+      expect(output.path).to.be.equal('./benchmark-results.json');
       cb();
     }
     catch (err) {
@@ -214,7 +215,7 @@ it('report - csv', function (cb) {
   stream.on('data', function (output) {
     try {
       expect(output).to.be.instanceof(File);
-      expect(output.path).to.be.equal('./benchmark-results.csv')
+      expect(output.path).to.be.equal('./benchmark-results.csv');
       cb();
     }
     catch (err) {
