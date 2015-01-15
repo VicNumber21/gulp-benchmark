@@ -95,7 +95,6 @@ var fastestReporter = function () {
     });
 
     var passed = split.passed || [];
-    var failed = split.failed || [];
 
     var results = passed.sort(function (a, b) {
       return b.hz - a.hz;

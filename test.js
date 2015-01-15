@@ -171,19 +171,19 @@ it('run', function (cb) {
 
 it('report - etalon', function () {
   var stream = bench.report(bench.reporters.etalon('RegExp#test'));
-  stream.write(require('./test-data/run-statistic'));
+  stream.write(require('./test-data/run-statistic.json'));
   stream.end();
 });
 
 it('report - fastest', function () {
   var stream = bench.report(bench.reporters.fastest());
-  stream.write(require('./test-data/run-statistic'));
+  stream.write(require('./test-data/run-statistic.json'));
   stream.end();
 });
 
 it('report - etalon and fastest', function () {
   var stream = bench.report([bench.reporters.etalon('RegExp#test'), bench.reporters.fastest()]);
-  stream.write(require('./test-data/run-statistic'));
+  stream.write(require('./test-data/run-statistic.json'));
   stream.end();
 });
 
@@ -203,7 +203,7 @@ it('report - json', function (cb) {
     }
   });
 
-  stream.write(require('./test-data/run-statistic'));
+  stream.write(require('./test-data/run-statistic.json'));
   stream.end();
 });
 
@@ -223,6 +223,6 @@ it('report - csv', function (cb) {
     }
   });
 
-  stream.write(require('./test-data/run-statistic'));
+  stream.write(require('./test-data/run-statistic.json'));
   stream.end();
 });
