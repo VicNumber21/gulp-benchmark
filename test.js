@@ -175,9 +175,27 @@ it('report - etalon', function () {
   stream.end();
 });
 
+it('report - etalon errors', function () {
+  var stream = bench.report(bench.reporters.etalon('RegExp#test'));
+  stream.write(require('./test-data/run-statistic-errors.json'));
+  stream.end();
+});
+
 it('report - fastest', function () {
   var stream = bench.report(bench.reporters.fastest());
   stream.write(require('./test-data/run-statistic.json'));
+  stream.end();
+});
+
+it('report - fastest no passed', function () {
+  var stream = bench.report(bench.reporters.fastest());
+  stream.write(require('./test-data/run-statistic-no-passed.json'));
+  stream.end();
+});
+
+it('report - fastest only passed', function () {
+  var stream = bench.report(bench.reporters.fastest());
+  stream.write(require('./test-data/run-statistic-only-passed.json'));
   stream.end();
 });
 
