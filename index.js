@@ -192,7 +192,7 @@ var Bench = {
         var options = {};
         var tests = [];
 
-        if (description instanceof Benchmark.Suite) {
+        if (_.isObject(description) && _.isFunction(description.on) && _.isFunction(description.run) && _.isNumber(description.length)) {
           suite = description;
         }
         else if (description instanceof Benchmark) {
