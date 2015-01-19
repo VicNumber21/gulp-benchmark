@@ -335,9 +335,7 @@ The logger object may provide four methods: ```onStart```, ```onCycle```, ```onE
 
 ```onComplete``` and ```onError``` are called after run depending on run result
 
-
 ```onStart```, ```onError``` and ```onComplete``` are called with an instance of Benchmark.Suite and
-
 ```onCycle``` is called with the instance of Benchmark.Events.
 
 Example (default logger):
