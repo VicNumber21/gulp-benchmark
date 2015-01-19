@@ -330,10 +330,14 @@ You may implement your own logger to e.g. redirect progress output into file.
 The logger object may provide four methods: ```onStart```, ```onCycle```, ```onError``` and ```onComplete```.
 
 ```onStart``` is called just before test suite run
+
 ```onCycle``` is called after each test run
+
 ```onComplete``` and ```onError``` are called after run depending on run result
 
+
 ```onStart```, ```onError``` and ```onComplete``` are called with an instance of Benchmark.Suite and
+
 ```onCycle``` is called with the instance of Benchmark.Events.
 
 Example (default logger):
