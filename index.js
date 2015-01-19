@@ -20,18 +20,32 @@ var caption = function (suite) {
   return name? '"' + name + '" from ' + suite.path: suite.path;
 };
 
-var consoleLogger = {
+var silenLogger = {
+  onStart: function () {},
+  onCycle: function () {},
+  onError: function () {},
+  onComplete: function () {}
+};
+
+var defaultLogger = {
   onStart: function (suite) {
     log('Running ' + caption(suite) + ' ...');
   },
 
   onCycle: function (event) {
-    var target = event.target || this;
+    var target = event.target;
     var suffix = target.error? red(' error'): '';
     log('  ' + target + suffix);
   },
 
-  onComplete: function () {
+  onError: function (suite) {
+    log(red('Errors') + ' in ' + caption(suite) + ':');
+
+    suite.forEach(function (test) {
+      if (test.error) {
+        log('  ' + test.name + ': ' + test.error);
+      }
+    });
   }
 };
 
@@ -242,12 +256,24 @@ var Bench = {
     });
   },
 
-  consoleLogger: consoleLogger,
-  run: function (logger) {
-    logger = logger || Bench.consoleLogger;
+  loggers: {
+    default: defaultLogger,
+    silent: silenLogger
+  },
+
+  run: function (options) {
+    var defaultOptions = {
+      logger: Bench.loggers.default,
+      failOnError: true
+    };
+
+    options = _.defaults(options || {}, defaultOptions);
+    options.logger = _.defaults(options.logger, Bench.loggers.silent);
 
     return through.obj(function (suite, enc, cb) {
       try {
+        var logger = options.logger;
+
         logger.onStart(suite);
 
         suite.on('cycle', function (event) {
@@ -255,15 +281,25 @@ var Bench = {
         });
 
         suite.on('complete', function () {
-          if (this.error) {
-            var pluginError = new PluginError(pluginName, this.error, {showStack: true});
+          var error = null;
+          var data = this;
+
+          if (_(this.pluck('error')).compact().value().length > 0) {
+            logger.onError(this);
+
+            var errorMsg = 'Error during running';
+            var pluginError = new PluginError(pluginName, errorMsg);
             log(pluginError.toString());
-            cb(this.error);
+
+            if (options.failOnError) {
+              error = errorMsg;
+            }
           }
           else {
             logger.onComplete(this);
-            cb(null, this);
           }
+
+          cb(error, data);
         });
 
         suite.run();
