@@ -304,6 +304,25 @@ If several reporters are given, they work in given order.
 
 ### Hooks
 
+#### Custom loader
+
+You may implement custom loader.
+The only thing, expected by ```run``` is it should be Benchmark.Suite instance in the pipe.
+
+Example (just for reference):
+
+```js
+var myLoad = function () {
+  return through.obj(function (file, enc, cb) {
+    var suite = new Benchmark.Suite('Empty');
+    cb(null, suite);
+  });
+};
+```
+
+Note that ```through``` is from [through2](https://github.com/rvagg/through2) as suggested in
+[gulp plugin guidelines](https://github.com/gulpjs/gulp/blob/master/docs/writing-a-plugin/guidelines.md)
+
 #### Custom logger
 
 You may implement your own logger to e.g. redirect progress output into file.
