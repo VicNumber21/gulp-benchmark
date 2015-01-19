@@ -32,46 +32,17 @@ After some thinking, it was decided to build yet another benchmark runner which 
 1. Formats similar to Original reports (inherited from [gulp-bench](https://github.com/hiddentao/gulp-bench)) should be supported
 as well as summary format similar to [gulp-bench-summary](https://github.com/ai/gulp-bench-summary);
 
-WARNING: although loader and reporter provides support of formats similar to provided by [gulp-bench](https://github.com/hiddentao/gulp-bench)
-         and [gulp-bench-summary](https://github.com/ai/gulp-bench-summary), there are several differences;
-         just be aware that it was not a copy/paste from those repos to mine;
-         feel free to report about inconveniences if any via opening an [issue](https://github.com/VicNumber21/gulp-benchmark/issues)
+**WARNING**: although loader and reporter provides support of formats similar to provided by [gulp-bench](https://github.com/hiddentao/gulp-bench)
+             and [gulp-bench-summary](https://github.com/ai/gulp-bench-summary), there are several differences;
+             just be aware that it was not a copy/paste from those repos to mine;
+             feel free to report about inconveniences if any via opening an [issue](https://github.com/VicNumber21/gulp-benchmark/issues)
 
 ## Usage
 
 The usage syntax below is the same as for [grunt-benchmark](https://github.com/shama/grunt-benchmark) with addition of
 original [Benchmark](http://benchmarkjs.com/) format.
 
-### Benchmark format
-
-Note that to use original [Benchmark](http://benchmarkjs.com/) format you have to install [Benchmark](http://benchmarkjs.com/):
-
-```bash
-$ npm install --save-dev benchmark
-```
-
-For [grunt-benchmark](https://github.com/shama/grunt-benchmark) formats you don't need this step though.
-
-#### Benchmark suite
-
-Let's assume that your benchmark test in `test.js` is the following:
-
-```js
-var Benchmark = require('benchmark');
-var suite = new Benchmark.Suite('Search');
-
-suite.add('RegExp#test', function() {
-    /o/.test('Hello World!');
-  })
-  .add('String#indexOf', function() {
-    'Hello World!'.indexOf('o') > -1;
-  })
-  .add('String#match', function() {
-    !!'Hello World!'.match(/o/);
-  });
-
-module.exports = suite;
-```
+Let's assume that your benchmark test in `test.js` is an example from [Benchmark-Suite](#benchmark-suite)
 
 In your gulpfile:
 
@@ -123,9 +94,39 @@ gulp.task('default', function () {
 });
 ```
 
-It will give you the similar output as above and also will create *benchmark-results.json* in the current directory.
+It will give you the similar output as above and also will create **benchmark-results.json** in the current directory.
 
-You can modify the results filename by supplying [json reporter options](#json-reporter-options).
+You can modify the results filename by supplying [json reporter path option](#reporters).
+
+### Benchmark format
+
+Note that to use original [Benchmark](http://benchmarkjs.com/) format you have to install [Benchmark](http://benchmarkjs.com/):
+
+```bash
+$ npm install --save-dev benchmark
+```
+
+For [grunt-benchmark](https://github.com/shama/grunt-benchmark) formats you don't need this step though.
+
+#### Benchmark suite
+
+
+```js
+var Benchmark = require('benchmark');
+var suite = new Benchmark.Suite('Search');
+
+suite.add('RegExp#test', function() {
+    /o/.test('Hello World!');
+  })
+  .add('String#indexOf', function() {
+    'Hello World!'.indexOf('o') > -1;
+  })
+  .add('String#match', function() {
+    !!'Hello World!'.match(/o/);
+  });
+
+module.exports = suite;
+```
 
 #### Benchmark single test
 
@@ -271,8 +272,8 @@ Default: `loggers.default`
 Specifies how to track progress of suite run.
 
 **gulp-benchmark** provides the following loggers:
-* default - prints Benchmark object converted to string
-* silent - prints nothing
+* **default** - prints Benchmark object converted to string
+* **silent** - prints nothing
 
 #### failOnError
 
@@ -291,19 +292,19 @@ Specifies the format(s) for the report.
 If several reporters are given, they work in given order.
 
 **gulp-benchmark** provides the following reporters:
-* etalon - prints comparative analysis where given etalon (test name) is a unit of metric;
-           default etalon is the first test in the suite;
-* fastest - print [grunt-benchmark](https://github.com/shama/grunt-benchmark)-like report
-            to compare the fastest test with the second fastest one;
-* json - creates json file with benchmark run statistic;
-         ```path``` is an option to specify report name, default is ```./benchmark-results.json```;
-* csv - creates csv file with benchmark run statistic
-        ```path``` is an option to specify report name, default is ```./benchmark-results.csv```;
-        (quite ugly at the moment; contributing for improvements are very welcome);
+* **etalon** - prints comparative analysis where given etalon (test name) is a unit of metric;
+               default etalon is the first test in the suite;
+* **fastest** - print [grunt-benchmark](https://github.com/shama/grunt-benchmark)-like report
+                to compare the fastest test with the second fastest one;
+* **json** - creates json file with benchmark run statistic;
+             ```path``` is an option to specify report name, default is ```./benchmark-results.json```;
+* **csv** - creates csv file with benchmark run statistic
+            ```path``` is an option to specify report name, default is ```./benchmark-results.csv```;
+            (quite ugly at the moment; contributing for improvements are very welcome);
 
-### hooks
+### Hooks
 
-#### custom logger
+#### Custom logger
 
 You may implement your own logger to e.g. redirect progress output into file.
 
@@ -318,6 +319,7 @@ The logger object may provide four methods: ```onStart```, ```onCycle```, ```onE
 
 Example (default logger):
 ```js
+var defaultLogger = {
   onStart: function (suite) {
     log('Running ' + caption(suite) + ' ...');
   },
@@ -327,9 +329,13 @@ Example (default logger):
     var suffix = target.error? red(' error'): '';
     log('  ' + target + suffix);
   }
+};
 ```
 
-#### custom reporter
+Note: ```log``` is [gulp util log](https://github.com/gulpjs/gulp-util#logmsg) and
+      ```red``` is [gulp util colors.red](https://github.com/gulpjs/gulp-util#colors)
+
+#### Custom reporter
 
 You may create your own reporter.
 
@@ -347,6 +353,7 @@ By default storage is ```null```.
 If you create console reporter, you don't need to care about ```storage``` and ```storageRef```.
 
 However, if you need to report into file, you have to do the following:
+
 1. Initialize ```storage``` by object with ```contents``` method returning ```string```.
    Most cases you need to do initialization once, so check if ```storage``` is ```null``` or not;
 1. Create report data basing on ```data``` and append it to ```storage```;
