@@ -312,6 +312,8 @@ The only thing, expected by ```run``` is it should be Benchmark.Suite instance i
 Example (just for reference):
 
 ```js
+var through = require('through2');
+
 var myLoad = function () {
   return through.obj(function (file, enc, cb) {
     var suite = new Benchmark.Suite('Empty');
@@ -320,7 +322,7 @@ var myLoad = function () {
 };
 ```
 
-Note that ```through``` is from [through2](https://github.com/rvagg/through2) as suggested in
+Refer to [through2](https://github.com/rvagg/through2) and to
 [gulp plugin guidelines](https://github.com/gulpjs/gulp/blob/master/docs/writing-a-plugin/guidelines.md)
 
 #### Custom logger
@@ -340,21 +342,32 @@ The logger object may provide four methods: ```onStart```, ```onCycle```, ```onE
 
 Example (default logger):
 ```js
+var gutil = require('gulp-util');
+
 var defaultLogger = {
   onStart: function (suite) {
-    log('Running ' + caption(suite) + ' ...');
+    gutil.log('Running ' + suite.name + ' ...');
   },
 
   onCycle: function (event) {
     var target = event.target;
-    var suffix = target.error? red(' error'): '';
-    log('  ' + target + suffix);
+    var suffix = target.error? gutil.colors.red(' error'): '';
+    gutil.log('  ' + target + suffix);
+  },
+
+  onError: function (suite) {
+    gutil.log(gutil.colors.red('Errors') + ' in ' + suite.name + ':');
+
+    suite.forEach(function (test) {
+      if (test.error) {
+        gutil.log('  ' + test.name + ': ' + test.error);
+      }
+    });
   }
 };
 ```
 
-Note: ```log``` is [gulp util log](https://github.com/gulpjs/gulp-util#logmsg) and
-      ```red``` is [gulp util colors.red](https://github.com/gulpjs/gulp-util#colors)
+Reference: [gutil](https://github.com/gulpjs/gulp-util)
 
 #### Custom reporter
 
@@ -382,6 +395,8 @@ However, if you need to report into file, you have to do the following:
 Example (json reporter):
 
 ```js
+var _ = require('lodash');
+
 var jsonReporter = function (options) {
   options = options || {};
 

@@ -4,199 +4,9 @@ var Benchmark = require('benchmark');
 var through = require('through2');
 var path = require('path');
 var gutil = require('gulp-util');
+var util = require('./lib/util');
 var _ = require('lodash');
-var PluginError = gutil.PluginError;
-var log = gutil.log;
-var green = gutil.colors.green;
-var red = gutil.colors.red;
-var yellow = gutil.colors.yellow;
-var File = gutil.File;
 
-
-var pluginName = 'gulp-benchmark';
-
-var caption = function (suite) {
-  var name = suite.name || suite.id;
-  return name? '"' + name + '" from ' + suite.path: suite.path;
-};
-
-var silenLogger = {
-  onStart: function () {},
-  onCycle: function () {},
-  onError: function () {},
-  onComplete: function () {}
-};
-
-var defaultLogger = {
-  onStart: function (suite) {
-    log('Running ' + caption(suite) + ' ...');
-  },
-
-  onCycle: function (event) {
-    var target = event.target;
-    var suffix = target.error? red(' error'): '';
-    log('  ' + target + suffix);
-  },
-
-  onError: function (suite) {
-    log(red('Errors') + ' in ' + caption(suite) + ':');
-
-    suite.forEach(function (test) {
-      if (test.error) {
-        log('  ' + test.name + ': ' + test.error);
-      }
-    });
-  }
-};
-
-var etalonReporter = function (etalonName) {
-  return function (data) {
-    var total = _(data).toArray().compact().value();
-    var split = _.groupBy(total, function (test) {
-      return _.isUndefined(test.error)? 'passed': 'failed';
-    });
-
-    var passed = split.passed || [];
-    var failed = split.failed || [];
-
-    var results = passed.sort(function (a, b) {
-      return b.hz - a.hz;
-    });
-
-    var etalonIndex = _.isString(etalonName)? _.pluck(results, 'name').indexOf(etalonName): 0;
-    var etalon = (etalonIndex < 0)? results[0]: results[etalonIndex];
-    var etalonHz = etalon? etalon.hz: 0;
-
-    log(caption(data) + ' (' + green('passed') + ': ' + passed.length + ' ,' +
-                               red('failed') + ': ' + failed.length + ')');
-
-    if (passed.length > 0) {
-      log(green(' Passed') + ':');
-
-      results.forEach(function (test, index) {
-        var output = '  "' + test.name + '"';
-
-        if (index < etalonIndex) {
-          output += ' at ' + (test.hz / etalonHz).toFixed(2) + 'x faster';
-        }
-        else if (index > etalonIndex) {
-          output += ' at ' + (etalonHz / test.hz).toFixed(2) + 'x slower';
-        }
-        else {
-          output += ' is etalon';
-          output = yellow(output);
-        }
-
-        log(output);
-      });
-    }
-
-    if (failed.length > 0) {
-      log(red(' Failed') + ':');
-
-      failed.forEach(function (test) {
-        log('  ' + test.name + ': ' + test.error);
-      });
-    }
-  };
-};
-
-var fastestReporter = function () {
-  return function (data) {
-    var total = _(data).toArray().compact().value();
-    var split = _.groupBy(total, function (test) {
-      return _.isUndefined(test.error) ? 'passed' : 'failed';
-    });
-
-    var passed = split.passed || [];
-
-    var results = passed.sort(function (a, b) {
-      return b.hz - a.hz;
-    });
-
-    if (results.length === 0) {
-      log('No passed tests');
-    }
-    else if (results.length === 1) {
-      log('Only test passed: ' + Benchmark.prototype.toString.call(results[0]));
-    }
-    else {
-      var first = results[0];
-      var second = results[1];
-      var times = first.hz / second.hz;
-      var timesStr = Benchmark.formatNumber(times.toFixed(times < 2 ? 2 : 1));
-      log('Fastest test is ' + first.name + ' at ' + timesStr + 'x faster than ' + second.name);
-    }
-  };
-};
-
-var jsonReporter = function (options) {
-  options = options || {};
-
-  return function (data, storageRef) {
-    if (!storageRef.storage) {
-      storageRef.storage = {
-        records: [],
-        path: options.path || './benchmark-results.json',
-        contents: function () {
-          return JSON.stringify(this.records, null, '  ');
-        }
-      };
-    }
-
-    var total = _(data).toArray().compact().value();
-
-    var record = {
-      name: data.name,
-      results: _.map(total, function (test) {
-        return {
-          name : test.name,
-          times: test.times,
-          stats: test.stats,
-          error : test.error,
-          count : test.count,
-          cycles: test.cycles,
-          hz : test.hz
-        };
-      })
-    };
-
-    storageRef.storage.records.push(record);
-  };
-};
-
-//TODO improve csv reporter - add multiple suite support as it was done for json
-var csvReporter = function (options) {
-  options = options || {};
-
-  return function (data, storageRef) {
-    if (!storageRef.storage) {
-      storageRef.storage = {
-        records: 'name,date,error,count,cycles,hz\n',
-        path: options.path || './benchmark-results.csv',
-        contents: function () {
-          return this.records;
-        }
-      };
-    }
-
-    var total = _(data).toArray().compact().value();
-
-    storageRef.storage.records += data.name + '\n' + _.map(total, function (test) {
-      return [
-          '"' + test.name + '"',
-          test.times.timeStamp,
-          '"' + test.error + '"',
-          test.count,
-          test.cycles,
-          test.hz
-        ].join(',') + '\n';
-    });
-  };
-};
-
-
-//TODO split into several files
 var Bench = {
   load: function () {
     return through.obj(function (file, enc, cb) {
@@ -256,10 +66,7 @@ var Bench = {
     });
   },
 
-  loggers: {
-    default: defaultLogger,
-    silent: silenLogger
-  },
+  loggers: require('./lib/loggers'),
 
   run: function (options) {
     var defaultOptions = {
@@ -288,8 +95,8 @@ var Bench = {
             logger.onError(this);
 
             var errorMsg = 'Error during running';
-            var pluginError = new PluginError(pluginName, errorMsg);
-            log(pluginError.toString());
+            var pluginError = new gutil.PluginError(util.pluginName, errorMsg);
+            gutil.log(pluginError.toString());
 
             if (options.failOnError) {
               error = errorMsg;
@@ -310,12 +117,7 @@ var Bench = {
     });
   },
 
-  reporters: {
-    etalon: etalonReporter,
-    fastest: fastestReporter,
-    json: jsonReporter,
-    csv: csvReporter
-  },
+  reporters: require('./lib/reporters'),
 
   report: function (reporters) {
     reporters = reporters || [Bench.reporters.etalon()];
@@ -343,7 +145,7 @@ var Bench = {
           var storage = storageRef.storage;
 
           if (storage) {
-            stream.push(new File ({
+            stream.push(new gutil.File ({
               cwd: process.cwd(),
               path: storage.path,
               contents: new Buffer(storage.contents())
@@ -359,6 +161,5 @@ var Bench = {
     });
   }
 };
-
 
 module.exports = Bench;

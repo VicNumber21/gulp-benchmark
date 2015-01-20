@@ -1,5 +1,3 @@
-/*global it */
-
 'use strict';
 
 var bench = require('./index');
@@ -7,7 +5,6 @@ var bench = require('./index');
 var expect = require('chai').expect;
 var File = require('gulp-util').File;
 var Benchmark = require('benchmark');
-
 
 it('load - single benchmark', function (cb) {
   this.timeout(20000);
@@ -173,7 +170,7 @@ it('run - failure', function (cb) {
 
   var runStream = bench.run();
 
-  runStream.on('error', function (output) {
+  runStream.on('error', function () {
     cb();
   });
 
