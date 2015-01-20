@@ -24,9 +24,10 @@
   "homepage": "https://github.com/VicNumber21/gulp-benchmark",
   "dependencies": {
     "benchmark": "~1.0.0",
-    "through2": "~0.6.3",
     "gulp-util": "~3.0.1",
-    "lodash": "~2.4.1"
+    "lodash": "~2.4.1",
+    "through2": "~0.6.3",
+    "tildify": "^1.0.0"
   },
   "devDependencies": {
     "chai": "~1.10.0",

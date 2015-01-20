@@ -7,7 +7,9 @@ var gutil = require('gulp-util');
 var util = require('./lib/util');
 var _ = require('lodash');
 
+//TODO move load, run and report into lib and create only benchmark function with combined options
 var Bench = {
+  //TODO add custom loaders via options
   load: function () {
     return through.obj(function (file, enc, cb) {
       var stream = this;
