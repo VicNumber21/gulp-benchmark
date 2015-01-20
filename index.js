@@ -10,6 +10,8 @@ var _ = require('lodash');
 var Bench = {
   load: function () {
     return through.obj(function (file, enc, cb) {
+      var stream = this;
+
       try {
         var description = require(path.resolve(process.cwd(), file.path));
         var suite;
@@ -61,7 +63,8 @@ var Bench = {
         cb(null, suite);
       }
       catch (err) {
-        cb(err);
+        stream.emit('error', new gutil.PluginError(util.pluginName, err, {showStack: true}));
+        cb();
       }
     });
   },
@@ -78,6 +81,8 @@ var Bench = {
     options.logger = _.defaults(options.logger, Bench.loggers.silent);
 
     return through.obj(function (suite, enc, cb) {
+      var stream = this;
+
       try {
         var logger = options.logger;
 
@@ -88,31 +93,36 @@ var Bench = {
         });
 
         suite.on('complete', function () {
-          var error = null;
           var data = this;
 
           if (_(this.pluck('error')).compact().value().length > 0) {
             logger.onError(this);
 
-            var errorMsg = 'Error during running';
-            var pluginError = new gutil.PluginError(util.pluginName, errorMsg);
+            var pluginError = new gutil.PluginError({
+              plugin: util.pluginName,
+              message:'Benchmark test(s) failure',
+              showStack: false
+            });
+
             gutil.log(pluginError.toString());
 
             if (options.failOnError) {
-              error = errorMsg;
+              stream.emit('error', pluginError);
+              data = undefined;
             }
           }
           else {
             logger.onComplete(this);
           }
 
-          cb(error, data);
+          cb(null, data);
         });
 
         suite.run();
       }
       catch (err) {
-        cb(err);
+        stream.emit('error', new gutil.PluginError(util.pluginName, err, {showStack: true}));
+        cb();
       }
     });
   },
@@ -125,6 +135,8 @@ var Bench = {
     var outputs = [];
 
     return through.obj(function (data, enc, cb) {
+      var stream = this;
+
       try {
         _.forEach(reporters, function (reporter, index) {
           var storageRef = outputs[index] = outputs[index] || { storage: null };
@@ -156,7 +168,8 @@ var Bench = {
         cb();
       }
       catch (err) {
-        cb(err);
+        stream.emit('error', new gutil.PluginError(util.pluginName, err, {showStack: true}));
+        cb();
       }
     });
   }
