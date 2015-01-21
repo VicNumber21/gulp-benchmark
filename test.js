@@ -10,7 +10,7 @@ var path = require('path');
 it('single benchmark', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -30,7 +30,7 @@ it('single benchmark', function (cb) {
 it('benchmark suite', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -50,7 +50,7 @@ it('benchmark suite', function (cb) {
 it('grunt-benchmark - single function', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     options: { maxTime: 0.1 },
     reporters: bench.reporters.json()
   });
@@ -73,7 +73,7 @@ it('grunt-benchmark - single function', function (cb) {
 it('grunt-benchmark - single test with options', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -93,7 +93,7 @@ it('grunt-benchmark - single test with options', function (cb) {
 it('grunt-benchmark - test suite with array of functions', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -113,7 +113,7 @@ it('grunt-benchmark - test suite with array of functions', function (cb) {
 it('grunt-benchmark - test suite with array of objects', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -133,7 +133,7 @@ it('grunt-benchmark - test suite with array of objects', function (cb) {
 it('grunt-benchmark - test suite with object', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
@@ -167,7 +167,7 @@ it('custom loader', function (cb) {
     return suite;
   };
 
-  var stream = bench.benchmark({
+  var stream = bench({
     loaders: customLoader,
     reporters: bench.reporters.json()
   });
@@ -190,7 +190,7 @@ it('custom loader', function (cb) {
 it('loading error', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('error', function () {
     cb();
@@ -203,7 +203,7 @@ it('loading error', function (cb) {
 it('running error', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.json()});
+  var stream = bench({reporters: bench.reporters.json()});
 
   stream.on('error', function () {
     cb();
@@ -216,7 +216,7 @@ it('running error', function (cb) {
 it('report - etalon', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     reporters: [
       bench.reporters.etalon('RegExp#test'),
       bench.reporters.json()
@@ -241,7 +241,7 @@ it('report - etalon', function (cb) {
 it('report - etalon errors', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     failOnError: false,
     reporters: [
       bench.reporters.etalon(),
@@ -267,7 +267,7 @@ it('report - etalon errors', function (cb) {
 it('report - fastest', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     failOnError: false,
     reporters: [
       bench.reporters.fastest(),
@@ -293,7 +293,7 @@ it('report - fastest', function (cb) {
 it('report - fastest no passed', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     failOnError: false,
     reporters: [
       bench.reporters.fastest(),
@@ -319,7 +319,7 @@ it('report - fastest no passed', function (cb) {
 it('report - fastest only passed', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({
+  var stream = bench({
     failOnError: false,
     reporters: [
       bench.reporters.fastest(),
@@ -345,7 +345,7 @@ it('report - fastest only passed', function (cb) {
 it('report - csv', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.benchmark({reporters: bench.reporters.csv()});
+  var stream = bench({reporters: bench.reporters.csv()});
 
   stream.on('data', function (output) {
     try {

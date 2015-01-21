@@ -52,7 +52,7 @@ var benchmark = require('gulp-benchmark');
 
 gulp.task('default', function () {
 	return gulp.src('test.js', {read: false})
-             .pipe(benchmark.benchmark({
+             .pipe(benchmark({
                reporters: benchmark.reporters.etalon('RegExp#test')
              }));
 });
@@ -84,7 +84,7 @@ var benchmark = require('gulp-benchmark');
 
 gulp.task('default', function () {
 	return gulp.src('test.js', {read: false})
-             .pipe(benchmark.benchmark({
+             .pipe(benchmark({
                reporters: [
                  benchmark.reporters.etalon('RegExp#test')
                  benchmark.reporters.json()
@@ -339,9 +339,9 @@ Your custom loader may look like:
 
 ```js
 var Benchmark = require('benchmark');
+var path = require('path');
 
 var customLoader = function (file, context) {
-  var path = require('path');
   var description = require(path.resolve(process.cwd(), file.path));
 
   var suite;
