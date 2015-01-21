@@ -1,6 +1,6 @@
 {
   "name": "gulp-benchmark",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Benchmark test runner for gulp with full control on input and output",
   "main": "index.js",
   "scripts": {
