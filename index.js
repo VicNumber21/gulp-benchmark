@@ -23,7 +23,7 @@ var Bench = {
     };
 
     var context = _.defaults(options || {}, defaultOptions);
-    context.loaders = util.toArray(context.loaders)
+    context.loaders = util.toArray(context.loaders);
     context.logger = _.defaults(context.logger, Bench.loggers.silent);
     context.reporters = util.toArray(context.reporters);
     context.outputs = [];
@@ -33,10 +33,10 @@ var Bench = {
 
       load(file, context)
         .then(function (suite) {
-          return run(suite, context)
+          return run(suite, context);
         })
         .then(function (suite) {
-          return report.prepare(suite, context)
+          return report.prepare(suite, context);
         })
         .fail(function (err) {
           var pluginError = new gutil.PluginError(pluginName, err, {showStack: true});
