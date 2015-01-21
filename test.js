@@ -139,6 +139,52 @@ it('load - grunt-benchmark - test suite with object', function (cb) {
   stream.end();
 });
 
+it('load - custom loader', function (cb) {
+  this.timeout(20000);
+
+  var customLoader = function (file) {
+    var path = require('path');
+    var description = require(path.resolve(process.cwd(), file.path));
+
+    var suite;
+
+    if (description && description.title && description.method) {
+      suite = new Benchmark.Suite(description.title);
+      suite.add(description.title, description.method());
+    }
+
+    return suite;
+  };
+
+  var stream = bench.load({loaders: customLoader});
+
+  stream.on('data', function (output) {
+    try {
+      expect(output).to.be.instanceof(Benchmark.Suite);
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/custom.js'}));
+  stream.end();
+});
+
+it('load - error', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.load();
+
+  stream.on('error', function () {
+    cb();
+  });
+
+  stream.write(new File({path: './test-data/custom.js'}));
+  stream.end();
+});
+
 it('run - passed', function (cb) {
   this.timeout(20000);
 

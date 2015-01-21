@@ -1,68 +1,44 @@
 'use strict';
 
-var Benchmark = require('benchmark');
 var through = require('through2');
-var path = require('path');
 var gutil = require('gulp-util');
 var util = require('./lib/util');
 var _ = require('lodash');
+var defaultLoaders = require('./lib/loaders');
 
 //TODO move load, run and report into lib and create only benchmark function with combined options
 var Bench = {
-  //TODO add custom loaders via options
-  load: function () {
+  load: function (options) {
+    var defaultOptions = {
+      loaders: []
+    };
+
+    options = _.defaults(options || {}, defaultOptions);
+    options.loaders = _.isArray(options.loaders)? options.loaders: [options.loaders];
+
     return through.obj(function (file, enc, cb) {
       var stream = this;
 
       try {
-        var description = require(path.resolve(process.cwd(), file.path));
         var suite;
-        var options = {};
-        var tests = [];
+        var loaders = options.loaders.concat(defaultLoaders);
 
-        if (_.isObject(description) && _.isFunction(description.on) && _.isFunction(description.run) && _.isNumber(description.length)) {
-          suite = description;
+        for(var index = 0; !util.isBenchmarkSuite(suite) && index < loaders.length; ++index) {
+          suite = loaders[index](file);
+        };
+
+        if (util.isBenchmarkSuite(suite) && suite.length > 0) {
+          suite.path = file.path;
+          cb(null, suite);
         }
-        else if (description instanceof Benchmark) {
-          options.name = path.basename(file.path, '.js');
-          tests.push(description);
+        else {
+          stream.emit('error', new gutil.PluginError({
+            plugin: util.pluginName,
+            message:'Benchmark failed on loading',
+            showStack: false
+          }));
+          cb();
         }
-        else if (_.isFunction(description)) {
-          var name = path.basename(file.path, '.js');
-          options.name = name;
-
-          tests.push({
-            name: name,
-            fn: description
-          });
-        }
-        else if (_.isFunction(description.fn)) {
-          options.name = path.basename(file.path, '.js');
-          var test = _.extend({}, description);
-          test.name = test.name || options.name;
-          tests.push(test);
-        }
-        else if (_.isObject(description.tests)) {
-          options = _.extend({}, description);
-          delete options.tests;
-
-          tests = _.map(description.tests, function (test, index) {
-            test = _.isFunction(test)? {fn: test}: test;
-            var name = _.isNumber(index)? '<Test #' + (index + 1) + '>': index;
-            test.name = test.name || name;
-            return test;
-          });
-        }
-
-        suite = suite || new Benchmark.Suite(options);
-        suite.path = file.path;
-
-        tests.forEach(function (test) {
-          suite.add(test);
-        });
-
-        suite.path = file.path;
-        cb(null, suite);
       }
       catch (err) {
         stream.emit('error', new gutil.PluginError(util.pluginName, err, {showStack: true}));
