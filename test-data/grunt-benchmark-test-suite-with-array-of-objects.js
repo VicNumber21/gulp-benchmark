@@ -1,6 +1,6 @@
 module.exports = {
   name: 'Timeout Showdown',
-  maxTime: 2,
+  maxTime: 0.1,
   tests: [
     {
       name: 'Return immediately (synchronous)',

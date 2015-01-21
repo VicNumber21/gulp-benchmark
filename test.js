@@ -5,15 +5,17 @@ var bench = require('./index');
 var expect = require('chai').expect;
 var File = require('gulp-util').File;
 var Benchmark = require('benchmark');
+var path = require('path');
 
-it('load - single benchmark', function (cb) {
+it('single benchmark', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -25,14 +27,15 @@ it('load - single benchmark', function (cb) {
   stream.end();
 });
 
-it('load - benchmark suite', function (cb) {
+it('benchmark suite', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -44,14 +47,18 @@ it('load - benchmark suite', function (cb) {
   stream.end();
 });
 
-it('load - grunt-benchmark - single function', function (cb) {
+it('grunt-benchmark - single function', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({
+    options: { maxTime: 0.1 },
+    reporters: bench.reporters.json()
+  });
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -63,14 +70,15 @@ it('load - grunt-benchmark - single function', function (cb) {
   stream.end();
 });
 
-it('load - grunt-benchmark - single test with options', function (cb) {
+it('grunt-benchmark - single test with options', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -82,14 +90,15 @@ it('load - grunt-benchmark - single test with options', function (cb) {
   stream.end();
 });
 
-it('load - grunt-benchmark - test suite with array of functions', function (cb) {
+it('grunt-benchmark - test suite with array of functions', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -101,14 +110,15 @@ it('load - grunt-benchmark - test suite with array of functions', function (cb) 
   stream.end();
 });
 
-it('load - grunt-benchmark - test suite with array of objects', function (cb) {
+it('grunt-benchmark - test suite with array of objects', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -120,14 +130,15 @@ it('load - grunt-benchmark - test suite with array of objects', function (cb) {
   stream.end();
 });
 
-it('load - grunt-benchmark - test suite with object', function (cb) {
+it('grunt-benchmark - test suite with object', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -139,7 +150,7 @@ it('load - grunt-benchmark - test suite with object', function (cb) {
   stream.end();
 });
 
-it('load - custom loader', function (cb) {
+it('custom loader', function (cb) {
   this.timeout(20000);
 
   var customLoader = function (file) {
@@ -150,17 +161,21 @@ it('load - custom loader', function (cb) {
 
     if (description && description.title && description.method) {
       suite = new Benchmark.Suite(description.title);
-      suite.add(description.title, description.method());
+      suite.add(description.title, description.method, { maxTime: 0.1 });
     }
 
     return suite;
   };
 
-  var stream = bench.load({loaders: customLoader});
+  var stream = bench.benchmark({
+    loaders: customLoader,
+    reporters: bench.reporters.json()
+  });
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -172,10 +187,10 @@ it('load - custom loader', function (cb) {
   stream.end();
 });
 
-it('load - error', function (cb) {
+it('loading error', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.load();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
   stream.on('error', function () {
     cb();
@@ -185,97 +200,33 @@ it('load - error', function (cb) {
   stream.end();
 });
 
-it('run - passed', function (cb) {
+it('running error', function (cb) {
   this.timeout(20000);
 
-  var runStream = bench.run();
+  var stream = bench.benchmark({reporters: bench.reporters.json()});
 
-  runStream.on('data', function (output) {
-    try {
-      expect(output).to.be.instanceof(Benchmark.Suite);
-      cb();
-    }
-    catch (err) {
-      cb(err);
-    }
-  });
-
-  var loadStream = bench.load();
-
-  loadStream.on('data', function(output) {
-    runStream.write(output);
-    runStream.end();
-  });
-
-  loadStream.write(new File({path: './test-data/grunt-benchmark-single-test-with-options.js'}));
-  loadStream.end();
-});
-
-it('run - failure', function (cb) {
-  this.timeout(20000);
-
-  var runStream = bench.run();
-
-  runStream.on('error', function () {
+  stream.on('error', function () {
     cb();
   });
 
-  var loadStream = bench.load();
-
-  loadStream.on('data', function(output) {
-    runStream.write(output);
-    runStream.end();
-  });
-
-  loadStream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-errors.js'}));
-  loadStream.end();
-});
-
-it('report - etalon', function () {
-  var stream = bench.report(bench.reporters.etalon('RegExp#test'));
-  stream.write(require('./test-data/run-statistic.json'));
+  stream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-errors.js'}));
   stream.end();
 });
 
-it('report - etalon errors', function () {
-  var stream = bench.report(bench.reporters.etalon('RegExp#test'));
-  stream.write(require('./test-data/run-statistic-errors.json'));
-  stream.end();
-});
-
-it('report - fastest', function () {
-  var stream = bench.report(bench.reporters.fastest());
-  stream.write(require('./test-data/run-statistic.json'));
-  stream.end();
-});
-
-it('report - fastest no passed', function () {
-  var stream = bench.report(bench.reporters.fastest());
-  stream.write(require('./test-data/run-statistic-no-passed.json'));
-  stream.end();
-});
-
-it('report - fastest only passed', function () {
-  var stream = bench.report(bench.reporters.fastest());
-  stream.write(require('./test-data/run-statistic-only-passed.json'));
-  stream.end();
-});
-
-it('report - etalon and fastest', function () {
-  var stream = bench.report([bench.reporters.etalon('RegExp#test'), bench.reporters.fastest()]);
-  stream.write(require('./test-data/run-statistic.json'));
-  stream.end();
-});
-
-it('report - json', function (cb) {
+it('report - etalon', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.report(bench.reporters.json());
+  var stream = bench.benchmark({
+    reporters: [
+      bench.reporters.etalon('RegExp#test'),
+      bench.reporters.json()
+    ]
+  });
 
   stream.on('data', function (output) {
     try {
-      expect(output).to.be.instanceof(File);
-      expect(output.path).to.be.equal('./benchmark-results.json');
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
       cb();
     }
     catch (err) {
@@ -283,14 +234,118 @@ it('report - json', function (cb) {
     }
   });
 
-  stream.write(require('./test-data/run-statistic.json'));
+  stream.write(new File({path: './test-data/benchmark-suite.js'}));
+  stream.end();
+});
+
+it('report - etalon errors', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.benchmark({
+    failOnError: false,
+    reporters: [
+      bench.reporters.etalon(),
+      bench.reporters.json()
+    ]
+  });
+
+  stream.on('data', function (output) {
+    try {
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/grunt-benchmark-test-suite-with-errors.js'}));
+  stream.end();
+});
+
+it('report - fastest', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.benchmark({
+    failOnError: false,
+    reporters: [
+      bench.reporters.fastest(),
+      bench.reporters.json()
+    ]
+  });
+
+  stream.on('data', function (output) {
+    try {
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/benchmark-suite.js'}));
+  stream.end();
+});
+
+it('report - fastest no passed', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.benchmark({
+    failOnError: false,
+    reporters: [
+      bench.reporters.fastest(),
+      bench.reporters.json()
+    ]
+  });
+
+  stream.on('data', function (output) {
+    try {
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/benchmark-single-errors.js'}));
+  stream.end();
+});
+
+it('report - fastest only passed', function (cb) {
+  this.timeout(20000);
+
+  var stream = bench.benchmark({
+    failOnError: false,
+    reporters: [
+      bench.reporters.fastest(),
+      bench.reporters.json()
+    ]
+  });
+
+  stream.on('data', function (output) {
+    try {
+      expect(path.basename(output.path)).be.eql('benchmark-results.json');
+      //TODO add more tests here
+      cb();
+    }
+    catch (err) {
+      cb(err);
+    }
+  });
+
+  stream.write(new File({path: './test-data/benchmark-single.js'}));
   stream.end();
 });
 
 it('report - csv', function (cb) {
   this.timeout(20000);
 
-  var stream = bench.report(bench.reporters.csv());
+  var stream = bench.benchmark({reporters: bench.reporters.csv()});
 
   stream.on('data', function (output) {
     try {
@@ -303,6 +358,6 @@ it('report - csv', function (cb) {
     }
   });
 
-  stream.write(require('./test-data/run-statistic.json'));
+  stream.write(new File({path: './test-data/benchmark-suite.js'}));
   stream.end();
 });

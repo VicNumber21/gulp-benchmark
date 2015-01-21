@@ -1,6 +1,6 @@
 module.exports = {
   name: 'Search',
-  maxTime: 2,
+  maxTime: 0.1,
   tests: [
     function() {
       /o/.test('Hello World!');
