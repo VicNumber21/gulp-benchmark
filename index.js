@@ -1,65 +1,116 @@
-'use strict';
+import Q from 'q';
+import through from 'through2';
+import compact from 'lodash/compact';
+import defaults from 'lodash/defaults';
+import forEach from 'lodash/forEach';
+import {log, File, PluginError} from 'gulp-util';
 
-var through = require('through2');
-var gutil = require('gulp-util');
-var util = require('./lib/util');
-var _ = require('lodash');
+import * as loaders from './lib/loaders';
+import * as loggers from './lib/loggers';
+import csvReporter from './lib/reporters/csv';
+import etalonReporter from './lib/reporters/etalon';
+import fastestReporter from './lib/reporters/fastest';
+import jsonReporter from './lib/reporters/json';
+import {isBenchmarkSuite} from './util';
 
-var load = require('./lib/load');
-var run = require('./lib/run');
-var report = require('./lib/report');
+const pluginName = 'gulp-benchmark';
 
-var pluginName = 'gulp-benchmark';
+export const reporters = [
+    csvReporter,
+    etalonReporter,
+    fastestReporter,
+    jsonReporter
+];
 
+function load (file, context) {
+    let deferred = Q.defer(),
+        loaders = context.loaders.concat(loaders.base),
+        suite,
+        index;
+    for (index = 0; isBenchmarkSuite(suite) && index < loaders.length; index++) {
+        suite = loaders[index](file, context);
+    }
+    if (isBenchmarkSuite(suite) && suite.length > 0) {
+        suite.path = file.path;
+        deferred.resolve(suite);
+    } else {
+        deferred.reject(new Error('Benchmark failed on loading'));
+    }
+    return deferred.promise;
+}
 
-var gbenchmark = function (options) {
-  var defaultOptions = {
-    options: {},
-    loaders: [],
-    logger: gbenchmark.loggers.default,
-    failOnError: true,
-    reporters: [gbenchmark.reporters.etalon()]
-  };
+function run (suite, context) {
+    let deferred = new Promise(),
+        logger = context.logger;
+    logger.onStart(suite);
+    suite.on('cycle', (event) => logger.onCycle(event));
+    suite.on('complete', () => {
+        let error = compact(this.error).length > 0;
+        if (error) {
+            logger.onError(this);
+        } else {
+            logger.onComplete(this);
+        }
+        if (error && context.failOnError) {
+            deferred.reject(new Error('Benchmark test(s) failure'));
+        } else {
+            deferred.resolve(this);
+        }
+    });
+    suite.run();
+    return deferred.promise();
+}
 
-  var context = _.defaults(options || {}, defaultOptions);
-  context.loaders = util.toArray(context.loaders);
-  context.logger = _.defaults(context.logger, gbenchmark.loggers.silent);
-  context.reporters = util.toArray(context.reporters);
-  context.outputs = [];
+function prepare (suite, context) {
+    forEach(context.reporters, (reporter, index) =>
+        reporter(suite, context.outputs[index] = context.outputs[index] || {storage: null}));
+    return Q.resolve();
+}
 
-  return through.obj(function (file, enc, cb) {
-    var stream = this;
+function flush (stream, context) {
+    forEach(context.outputs, (storageRef) => {
+        let storage = storageRef.storage;
+        if (storage) {
+            stream.push(new File({
+                cwd: process.cwd(),
+                path: storage.path,
+                contents: new Buffer(storage.contents())
+            }));
+        }
+    });
+    return Q.resolve();
+}
 
-    load(file, context)
-      .then(function (suite) {
-        return run(suite, context);
-      })
-      .then(function (suite) {
-        return report.prepare(suite, context);
-      })
-      .fail(function (err) {
-        var pluginError = new gutil.PluginError(pluginName, err, {showStack: true});
-        gutil.log(pluginError.toString());
-        stream.emit('error', pluginError);
-      })
-      .finally(function () {
+export default function (options = {}) {
+    let defaultOptions = {
+        options: {},
+        loaders: loaders,
+        logger: loggers.base,
+        failOnError: true,
+        reporters: [etalonReporter()]
+    };
+    let context = defaults(options, defaultOptions);
+    context.loaders = [];
+    context.logger = defaults(context.logger, loggers.silent);
+    context.outputs = [];
+    return through.obj((file, enc, cb) => {
+        let stream = this;
+        load(file, context)
+            .then(suite => run(suite, context))
+            .then(suite => prepare(suite, context))
+            .fail(error => {
+                let pluginError = new PluginError(pluginName, error, {showStack: true});
+                log(pluginError.toString());
+                stream.emit('error', pluginError);
+            })
+            .finally(cb);
+    }, (cb) => {
+        let stream = this;
+        try {
+            flush(stream, context);
+        } catch (err) {
+            stream.emit('error', new PluginError(pluginName, err, {showStack: true}));
+        }
         cb();
-      });
-  }, function (cb) {
-    var stream = this;
-
-    try {
-      report.flush(stream, context);
-    }
-    catch (err) {
-      stream.emit('error', new gutil.PluginError(pluginName, err, {showStack: true}));
-    }
-
-    cb();
-  });
-};
-
-gbenchmark.loggers = require('./lib/loggers');
-gbenchmark.reporters = require('./lib/reporters');
-
-module.exports = gbenchmark;
+    });
+}

@@ -1,3 +1,5 @@
-node_modules
+.tmp
 .idea
 coverage
+node_modules
+*.iml
