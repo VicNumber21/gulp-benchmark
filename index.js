@@ -1,20 +1,23 @@
-import Q from 'q';
+import Benchmark from 'benchmark';
 import through from 'through2';
 import compact from 'lodash/compact';
 import defaults from 'lodash/defaults';
-import forEach from 'lodash/forEach';
 import {log, File, PluginError} from 'gulp-util';
 
-import {base} from './lib/loaders';
+import {base as baseLoader} from './lib/loaders';
 import {base as baseLogger, silent} from './lib/loggers';
 import csvReporter from './lib/reporters/csv';
 import etalonReporter from './lib/reporters/etalon';
 import fastestReporter from './lib/reporters/fastest';
 import jsonReporter from './lib/reporters/json';
-import {isBenchmarkSuite, toArray} from './lib/util';
+import {toArray} from './lib/util';
 
 const pluginName = 'gulp-benchmark';
 
+/**
+ * The available reporters
+ * @type {{csv: Reporter, etalon: Reporter, fastest: Reporter, json: Reporter}}
+ */
 export const reporters = {
     csv: csvReporter,
     etalon: etalonReporter,
@@ -22,65 +25,20 @@ export const reporters = {
     json: jsonReporter
 };
 
+/**
+ * The available loggers
+ * @type {{base: Logger, silent: Logger}}
+ */
 export const loggers = {
     base: baseLogger,
     silent: silent
 };
 
-function load (file, context) {
-    let loaders = context.loaders,
-        suites = loaders.map(loader => loader(file, context))
-            .filter(suite => isBenchmarkSuite(suite));
-    if (!suites.length) {
-        throw new Error('Benchmark failed on loading');
-    }
-    let suite = suites[0];
-    suite.path = file.path;
-    return suite;
-}
-
-function run (suite, context) {
-    let deferred = Q.defer(),
-        logger = context.logger;
-    logger.onStart(suite);
-    suite.on('cycle', (event) => logger.onCycle(event));
-    suite.on('complete', () => {
-        let error = compact(this.error).length > 0;
-        if (error) {
-            logger.onError(this);
-        } else {
-            logger.onComplete(this);
-        }
-        if (error && context.failOnError) {
-            deferred.reject(new Error('Benchmark test(s) failure'));
-        } else {
-            deferred.resolve(this);
-        }
-    });
-    suite.run();
-    return deferred.promise();
-}
-
-function prepare (suite, context) {
-    forEach(context.reporters, (reporter, index) =>
-        reporter(suite, context.outputs[index] = context.outputs[index] || {storage: null}));
-    return Q.resolve();
-}
-
-function flush (stream, context) {
-    forEach(context.outputs, (storageRef) => {
-        let storage = storageRef.storage;
-        if (storage) {
-            stream.push(new File({
-                cwd: process.cwd(),
-                path: storage.path,
-                contents: new Buffer(storage.contents())
-            }));
-        }
-    });
-    return Q.resolve();
-}
-
+/**
+ * The gulp-benchmark task
+ * @param {Options} options
+ * @returns {*}
+ */
 export default function (options = {}) {
     let defaultOptions = {
         options: {},
@@ -89,28 +47,121 @@ export default function (options = {}) {
         failOnError: true,
         reporters: [reporters.etalon()]
     };
+    /**
+     * @type Context
+     */
     let context = defaults(options, defaultOptions);
-    context.loaders = toArray(context.loaders).concat(base);
+    context.loaders = toArray(context.loaders).concat(baseLoader);
     context.logger = defaults(context.logger, loggers.silent);
     context.reporters = toArray(context.reporters);
     context.outputs = [];
-    return through.obj((file, enc, cb) => {
+    return through.obj(function (file, encoding, callback) {
         let stream = this;
-        run(load(file, context), context)
-            .then(suite => prepare(suite, context))
-            .fail(error => {
-                let pluginError = new PluginError(pluginName, error, {showStack: true});
+        function error (message) {
+            if (context.failOnError) {
+                let pluginError = new PluginError(pluginName, new Error(message), {showStack: true});
                 log(pluginError.toString());
                 stream.emit('error', pluginError);
-            })
-            .finally(cb);
-    }, (cb) => {
-        let stream = this;
-        try {
-            flush(stream, context);
-        } catch (err) {
-            stream.emit('error', new PluginError(pluginName, err, {showStack: true}));
+            }
         }
-        cb();
+        let suites = context.loaders
+                .map(loader => loader(file, context))
+                .filter(suite => suite instanceof Benchmark.Suite);
+        if (!suites.length) {
+            error('Benchmark failed on loading');
+        }
+        let suite = suites[0],
+            logger = context.logger;
+        logger.onStart(suite, file.path);
+        suite.on('cycle', event => logger.onCycle(event));
+        suite.on('complete', function () {
+            let hasError = compact(this.map(benchmark => benchmark.error)).length > 0;
+            if (hasError) {
+                logger.onError(this, file.path);
+                error('Benchmark failed on loading');
+            } else {
+                logger.onComplete(this, file.path);
+                context.reporters.forEach((reporter, index) =>
+                    reporter(this, file.path, context.outputs[index] = context.outputs[index] || {storage: null}));
+            }
+            callback();
+        });
+        suite.run();
+    }, function (callback) {
+        try {
+            context.outputs.forEach(storageRef => {
+                let storage = storageRef.storage;
+                if (storage) {
+                    this.push(new File({
+                        cwd: process.cwd(),
+                        path: storage.path,
+                        contents: new Buffer(storage.contents())
+                    }));
+                }
+            });
+        } catch (err) {
+            this.emit('error', new PluginError(pluginName, err, {showStack: true}));
+        }
+        callback();
     });
 }
+
+/**
+ * A loader callback
+ * @callback Loader
+ * @param {File} file
+ * @param {context} context
+ * @returns {Benchmark.Suite}
+ */
+
+/**
+ * An object that handles all the basic phases of a Benchmark.
+ * @typedef {{
+ *     onStart: function(Benchmark.Suite, String),
+ *     onCycle: function(Benchmark.Event),
+ *     onError: function(Benchmark.Suite, String),
+ *     onComplete: function(Benchmark.Suite, String)
+ * }} Logger
+ */
+
+/**
+ * @typedef {{path: String, content: (function(): String)}} Storage
+ */
+
+/**
+ * @typedef {{storage: Storage}} StorageRef
+ */
+
+/**
+ * @callback ReporterHandler
+ * @param {Benchmark.Suite} suite
+ * @param {String} path
+ * @param {StorageRef} [storageRef]
+ */
+
+/**
+ * @callback Reporter
+ * @param {*} [options]
+ * @returns {ReporterHandler}
+ */
+
+/**
+ * @typedef {{
+ *      options: {},
+ *      loaders: Array<Loader>|Loader,
+ *      logger: Logger,
+ *      failOnError: Boolean,
+ *      reporters: Array<Reporter>|Reporter
+ * }} Options
+ */
+
+/**
+ * @typedef {{
+ *      options: {},
+ *      loaders: Array<Loader>,
+ *      logger: Logger,
+ *      failOnError: Boolean,
+ *      reporters: Array<Reporter>,
+ *      outputs: Array<Storage>
+ * }} Context
+ */
