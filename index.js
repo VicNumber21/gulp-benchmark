@@ -5,42 +5,42 @@ import defaults from 'lodash/defaults';
 import forEach from 'lodash/forEach';
 import {log, File, PluginError} from 'gulp-util';
 
-import * as loaders from './lib/loaders';
-import * as loggers from './lib/loggers';
+import {base} from './lib/loaders';
+import {base as baseLogger, silent} from './lib/loggers';
 import csvReporter from './lib/reporters/csv';
 import etalonReporter from './lib/reporters/etalon';
 import fastestReporter from './lib/reporters/fastest';
 import jsonReporter from './lib/reporters/json';
-import {isBenchmarkSuite} from './util';
+import {isBenchmarkSuite, toArray} from './lib/util';
 
 const pluginName = 'gulp-benchmark';
 
-export const reporters = [
-    csvReporter,
-    etalonReporter,
-    fastestReporter,
-    jsonReporter
-];
+export const reporters = {
+    csv: csvReporter,
+    etalon: etalonReporter,
+    fastest: fastestReporter,
+    json: jsonReporter
+};
+
+export const loggers = {
+    base: baseLogger,
+    silent: silent
+};
 
 function load (file, context) {
-    let deferred = Q.defer(),
-        loaders = context.loaders.concat(loaders.base),
-        suite,
-        index;
-    for (index = 0; isBenchmarkSuite(suite) && index < loaders.length; index++) {
-        suite = loaders[index](file, context);
+    let loaders = context.loaders,
+        suites = loaders.map(loader => loader(file, context))
+            .filter(suite => isBenchmarkSuite(suite));
+    if (!suites.length) {
+        throw new Error('Benchmark failed on loading');
     }
-    if (isBenchmarkSuite(suite) && suite.length > 0) {
-        suite.path = file.path;
-        deferred.resolve(suite);
-    } else {
-        deferred.reject(new Error('Benchmark failed on loading'));
-    }
-    return deferred.promise;
+    let suite = suites[0];
+    suite.path = file.path;
+    return suite;
 }
 
 function run (suite, context) {
-    let deferred = new Promise(),
+    let deferred = Q.defer(),
         logger = context.logger;
     logger.onStart(suite);
     suite.on('cycle', (event) => logger.onCycle(event));
@@ -84,19 +84,19 @@ function flush (stream, context) {
 export default function (options = {}) {
     let defaultOptions = {
         options: {},
-        loaders: loaders,
+        loaders: [],
         logger: loggers.base,
         failOnError: true,
-        reporters: [etalonReporter()]
+        reporters: [reporters.etalon()]
     };
     let context = defaults(options, defaultOptions);
-    context.loaders = [];
+    context.loaders = toArray(context.loaders).concat(base);
     context.logger = defaults(context.logger, loggers.silent);
+    context.reporters = toArray(context.reporters);
     context.outputs = [];
     return through.obj((file, enc, cb) => {
         let stream = this;
-        load(file, context)
-            .then(suite => run(suite, context))
+        run(load(file, context), context)
             .then(suite => prepare(suite, context))
             .fail(error => {
                 let pluginError = new PluginError(pluginName, error, {showStack: true});

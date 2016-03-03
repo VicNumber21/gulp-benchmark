@@ -5,12 +5,14 @@ import template from 'lodash/template';
 import {readFileSync} from 'fs';
 import {optimize, BannerPlugin} from 'webpack';
 
-const banner = template(readFileSync(__dirname + '/LICENSE', 'utf8'))({
+const banner = template(readFileSync(__dirname + '/LICENSE_BANNER', 'utf8'))({
     pkg: pkg,
     date: new Date()
 });
 
 const base = {
+    externals: /^[a-z\/\-0-9]+$/i,
+    target: 'node',
     output: {
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: 'webpack:///sort/[resource-path]'
