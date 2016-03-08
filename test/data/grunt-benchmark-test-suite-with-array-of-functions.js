@@ -4,6 +4,6 @@ export default {
     tests: [
         () => /o/.test('Hello World!'),
         () => 'Hello World!'.indexOf('o') > -1,
-        () => !!'Hello World!'.match(/o/)
+        () => Boolean('Hello World!'.match(/o/))
     ]
 };

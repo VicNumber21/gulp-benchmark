@@ -5,6 +5,14 @@ import {basename, resolve} from 'path';
 import gulpBenchmark from './../../index';
 import {reporters} from './../../index';
 
+/**
+ * Test a passing function
+ * @param {String} name
+ * @param {Object} benchOptions
+ * @param {Function} assert
+ * @param {String} input
+ * @return {undefined}
+ */
 function test (name, benchOptions, assert, input) {
     it(name, function (cb) {
         this.timeout(20000);
@@ -22,6 +30,13 @@ function test (name, benchOptions, assert, input) {
     });
 }
 
+/**
+ * Test a failing function
+ * @param {String} name
+ * @param {Object} benchOptions
+ * @param {String} input
+ * @return {undefined}
+ */
 function testError (name, benchOptions, input) {
     it(name, function (cb) {
         this.timeout(20000);
@@ -34,18 +49,32 @@ function testError (name, benchOptions, input) {
     });
 }
 
+/**
+ * Assert output path is json
+ * @param {File} output
+ * @return {undefined}
+ */
 function jsonAssert (output) {
     expect(basename(output.path)).be.eql('benchmark-results.json');
 }
 
+/**
+ * Assert output path is csv
+ * @param {File} output
+ * @return {undefined}
+ */
 function csvAssert (output) {
     expect(output).to.be.instanceof(File);
     expect(output.path).to.be.equal('./benchmark-results.csv');
 }
 
+/**
+ * A custom benchmark loader
+ * @param {File} file
+ * @return {Benchmark.Suite}
+ */
 function customLoader (file) {
-    let path = require('path');
-    let description = require(path.resolve(process.cwd(), file.path));
+    let description = require(resolve(process.cwd(), file.path));
     let suite;
     if (description && description.title && description.method) {
         suite = new Benchmark.Suite(description.title);
@@ -62,8 +91,8 @@ test('grunt-benchmark - single test with options', {reporters: reporters.json()}
     jsonAssert, '../data/grunt-benchmark-single-test-with-options.js');
 test('grunt-benchmark - test suite with array of functions', {reporters: reporters.json()},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-array-of-functions.js');
-// test('grunt-benchmark - test suite with array of objects', {reporters: reporters.json()},
-//     jsonAssert, '../data/grunt-benchmark-test-suite-with-array-of-objects.js');
+test('grunt-benchmark - test suite with array of objects', {reporters: reporters.json()},
+    jsonAssert, '../data/grunt-benchmark-test-suite-with-array-of-objects.js');
 test('grunt-benchmark - test suite with object', {reporters: reporters.json()},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-object.js');
 test('report - etalon', {reporters: [reporters.etalon('RegExp#test'), reporters.json()]},

@@ -1,5 +1,5 @@
 /*!
- *  gulp-benchmark - v2.0.0 - Fri Mar 04 2016 20:05:47 GMT-0500 (EST)
+ *  gulp-benchmark - v2.0.0 - Tue Mar 08 2016 09:31:02 GMT-0500 (EST)
  *  git://github.com/mtraynham/gulp-benchmark.git
  *  Copyright 2016-2016 Matt Traynham <skitch920@gmail.com>
  *
@@ -255,7 +255,7 @@ module.exports =
 	 *      loaders: Array<Loader>|Loader,
 	 *      logger: Logger,
 	 *      failOnError: Boolean,
-	 *      reporters: Array<Reporter>|Array<Reporter>
+	 *      reporters: Array<Reporter>|Reporter
 	 * }} Options
 	 */
 	
@@ -359,7 +359,7 @@ module.exports =
 	    var description = __webpack_require__(12)((0, _path.resolve)(process.cwd(), file.path)),
 	        testOptions = context.options,
 	        suiteOptions = {},
-	        tests = undefined;
+	        tests = void 0;
 	    if (description instanceof _benchmark2.default.Suite) {
 	        return description;
 	    } else if (description instanceof _benchmark2.default) {

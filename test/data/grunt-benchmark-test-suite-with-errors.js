@@ -10,12 +10,12 @@ export default {
         'Timeout: 50ms (asynchronous)': {
             maxTime: 0.1,
             defer: true,
-            fn: (deferred) => setTimeout(() => deferred.resolve(), 50)
+            fn: deferred => setTimeout(() => deferred.resolve(), 50)
         },
         'Timeout: 100ms (asynchronous)': {
             maxTime: 0.1,
             defer: true,
-            fn: (deferred) => setTimeout(() => deferred.resolve(), 100)
+            fn: deferred => setTimeout(() => deferred.resolve(), 100)
         }
     }
 };

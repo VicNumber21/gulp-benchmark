@@ -56,37 +56,41 @@ export default function (options = {}) {
     context.reporters = toArray(context.reporters);
     context.outputs = [];
     return through.obj(function (file, encoding, callback) {
-        let stream = this;
-        function error (message) {
-            if (context.failOnError) {
-                let pluginError = new PluginError(pluginName, new Error(message), {showStack: true});
-                log(pluginError.toString());
-                stream.emit('error', pluginError);
-            }
-        }
-        let suites = context.loaders
-                .map(loader => loader(file, context))
-                .filter(suite => suite instanceof Benchmark.Suite);
-        if (!suites.length) {
-            error('Benchmark failed on loading');
-        }
-        let suite = suites[0],
-            logger = context.logger;
-        logger.onStart(suite, file.path);
-        suite.on('cycle', event => logger.onCycle(event));
-        suite.on('complete', function () {
-            let hasError = compact(this.map(benchmark => benchmark.error)).length > 0;
-            if (hasError) {
-                logger.onError(this, file.path);
-                error('Benchmark failed on loading');
-            } else {
-                logger.onComplete(this, file.path);
-                context.reporters.forEach((reporter, index) =>
-                    reporter(this, file.path, context.outputs[index] = context.outputs[index] || {storage: null}));
-            }
+        let stream = this,
+            run = new Promise(resolve => {
+                let suites = context.loaders
+                    .map(loader => loader(file, context))
+                    .filter(suite => suite instanceof Benchmark.Suite);
+                if (!suites.length) {
+                    throw new Error('Benchmark failed on loading');
+                }
+                resolve(suites[0]);
+            });
+        run.then(suite => new Promise(resolve => {
+            let logger = context.logger;
+            logger.onStart(suite, file.path);
+            suite.on('cycle', event => logger.onCycle(event));
+            suite.on('complete', function () {
+                let hasError = compact(this.map(benchmark => benchmark.error)).length > 0;
+                if (hasError) {
+                    logger.onError(this, file.path);
+                    if (context.failOnError) {
+                        throw new Error('Benchmark failed to run');
+                    }
+                } else {
+                    logger.onComplete(this, file.path);
+                    context.reporters.forEach((reporter, index) =>
+                        reporter(this, file.path, context.outputs[index] = context.outputs[index] || {storage: null}));
+                }
+                resolve();
+            });
+            suite.run();
+        }).then(callback, message => {
+            let pluginError = new PluginError(pluginName, new Error(message), {showStack: true});
+            log(pluginError.toString());
+            stream.emit('error', pluginError);
             callback();
-        });
-        suite.run();
+        }));
     }, function (callback) {
         try {
             context.outputs.forEach(storageRef => {
@@ -162,6 +166,6 @@ export default function (options = {}) {
  *      logger: Logger,
  *      failOnError: Boolean,
  *      reporters: Array<Reporter>,
- *      outputs: Array<Storage>
+ *      outputs: Array<StorageRef>
  * }} Context
  */
