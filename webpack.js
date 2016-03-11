@@ -7,7 +7,7 @@ import {join} from 'path';
 import {optimize, BannerPlugin} from 'webpack';
 
 const banner = template(readFileSync(join(__dirname, 'LICENSE_BANNER'), 'utf8'))({
-    pkg: pkg,
+    pkg,
     date: new Date()
 });
 
@@ -54,4 +54,4 @@ export const test = merge({}, base, {
     output: {
         filename: 'test.js'
     }
-}, (a, b) => isArray(a) ? a.concat(b) : undefined);
+}, (a, b) => (isArray(a) ? a.concat(b) : undefined));

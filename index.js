@@ -1,100 +1,84 @@
+import 'babel-polyfill';
 import Benchmark from 'benchmark';
 import through from 'through2';
 import compact from 'lodash/compact';
 import defaults from 'lodash/defaults';
+import find from 'lodash/find';
 import {log, File, PluginError} from 'gulp-util';
 
 import {base as baseLoader} from './lib/loaders';
 import {base as baseLogger, silent} from './lib/loggers';
-import csvReporter from './lib/reporters/csv';
-import etalonReporter from './lib/reporters/etalon';
-import fastestReporter from './lib/reporters/fastest';
-import jsonReporter from './lib/reporters/json';
+import csv from './lib/reporters/csv';
+import etalon from './lib/reporters/etalon';
+import fastest from './lib/reporters/fastest';
+import json from './lib/reporters/json';
 import {toArray} from './lib/util';
 
 const pluginName = 'gulp-benchmark';
-
-/**
- * The available reporters
- * @type {{csv: Reporter, etalon: Reporter, fastest: Reporter, json: Reporter}}
- */
-export const reporters = {
-    csv: csvReporter,
-    etalon: etalonReporter,
-    fastest: fastestReporter,
-    json: jsonReporter
-};
-
-/**
- * The available loggers
- * @type {{base: Logger, silent: Logger}}
- */
-export const loggers = {
-    base: baseLogger,
-    silent: silent
-};
 
 /**
  * The gulp-benchmark task
  * @param {Options} options
  * @returns {*}
  */
-export default function (options = {}) {
-    let defaultOptions = {
+function gulpBenchmark (options = {}) {
+    const defaultOptions = {
         options: {},
         loaders: [],
-        logger: loggers.base,
+        logger: baseLogger,
         failOnError: true,
-        reporters: [reporters.etalon()]
+        reporters: [etalon()]
     };
     /**
      * @type Context
      */
-    let context = defaults(options, defaultOptions);
+    const context = defaults(options, defaultOptions);
     context.loaders = toArray(context.loaders).concat(baseLoader);
-    context.logger = defaults(context.logger, loggers.silent);
+    context.logger = defaults(context.logger, silent);
     context.reporters = toArray(context.reporters);
     context.outputs = [];
     return through.obj(function (file, encoding, callback) {
-        let stream = this,
-            run = new Promise(resolve => {
-                let suites = context.loaders
-                    .map(loader => loader(file, context))
-                    .filter(suite => suite instanceof Benchmark.Suite);
-                if (!suites.length) {
-                    throw new Error('Benchmark failed on loading');
-                }
-                resolve(suites[0]);
+        const stream = this,
+            run = new Promise((resolve, reject) => {
+                const suite = find(context.loaders.map(loader => {
+                    try {
+                        return loader(file, context);
+                    } catch (err) { // Fail silently
+                    }
+                    return null;
+                }), s => s instanceof Benchmark.Suite);
+                return !suite ?
+                    reject(new Error('Benchmark failed on loading')) :
+                    resolve(suite);
             });
-        run.then(suite => new Promise(resolve => {
-            let logger = context.logger;
+        run.then(suite => new Promise((resolve, reject) => {
+            const logger = context.logger;
             logger.onStart(suite, file.path);
             suite.on('cycle', event => logger.onCycle(event));
             suite.on('complete', function () {
-                let hasError = compact(this.map(benchmark => benchmark.error)).length > 0;
+                const hasError = compact(this.map(benchmark => benchmark.error)).length > 0;
                 if (hasError) {
                     logger.onError(this, file.path);
                     if (context.failOnError) {
-                        throw new Error('Benchmark failed to run');
+                        return reject(new Error('Benchmark failed to run'));
                     }
-                } else {
-                    logger.onComplete(this, file.path);
-                    context.reporters.forEach((reporter, index) =>
-                        reporter(this, file.path, context.outputs[index] = context.outputs[index] || {storage: null}));
                 }
-                resolve();
+                logger.onComplete(this, file.path);
+                context.reporters.forEach((reporter, index) =>
+                    reporter(this, file.path, context.outputs[index] = context.outputs[index] || {storage: null}));
+                return resolve();
             });
             suite.run();
-        }).then(callback, message => {
-            let pluginError = new PluginError(pluginName, new Error(message), {showStack: true});
+        })).then(callback, error => {
+            const pluginError = new PluginError(pluginName, error, {showStack: true});
             log(pluginError.toString());
             stream.emit('error', pluginError);
             callback();
-        }));
+        });
     }, function (callback) {
         try {
             context.outputs.forEach(storageRef => {
-                let storage = storageRef.storage;
+                const storage = storageRef.storage;
                 if (storage) {
                     this.push(new File({
                         cwd: process.cwd(),
@@ -109,6 +93,29 @@ export default function (options = {}) {
         callback();
     });
 }
+
+
+/**
+ * The available reporters
+ * @type {{csv: Reporter, etalon: Reporter, fastest: Reporter, json: Reporter}}
+ */
+gulpBenchmark.reporters = {
+    csv,
+    etalon,
+    fastest,
+    json
+};
+
+/**
+ * The available loggers
+ * @type {{default: Logger, silent: Logger}}
+ */
+gulpBenchmark.loggers = {
+    default: baseLogger,
+    silent
+};
+
+export default gulpBenchmark;
 
 /**
  * A loader callback

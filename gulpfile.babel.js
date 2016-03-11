@@ -19,7 +19,7 @@ const bump = type =>
     gulp.src([
         './package.json'
     ])
-    .pipe($.bump({type: type}))
+    .pipe($.bump({type}))
     .pipe(gulp.dest('./'));
 
 // Lint Task
@@ -53,7 +53,7 @@ gulp.task('coverage', ['lint'], () =>
         .pipe($.istanbul.hookRequire())
         .on('finish', () =>
             test()
-                .pipe($.istanbul.writeReports()) // Creating the reports after tests runned
+                .pipe($.istanbul.writeReports()) // Creating the reports after tests run
                 .on('end', () =>
                     gulp.src('coverage/lcov.info')
                         .pipe($.coveralls()))));

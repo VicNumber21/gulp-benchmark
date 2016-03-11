@@ -3,7 +3,6 @@ import {expect} from 'chai';
 import {File} from 'gulp-util';
 import {basename, resolve} from 'path';
 import gulpBenchmark from './../../index';
-import {reporters} from './../../index';
 
 /**
  * Test a passing function
@@ -16,8 +15,8 @@ import {reporters} from './../../index';
 function test (name, benchOptions, assert, input) {
     it(name, function (cb) {
         this.timeout(20000);
-        let stream = gulpBenchmark(benchOptions);
-        stream.on('data', function (output) {
+        const stream = gulpBenchmark(benchOptions);
+        stream.on('data', (output) => {
             try {
                 assert(output);
                 cb();
@@ -40,8 +39,8 @@ function test (name, benchOptions, assert, input) {
 function testError (name, benchOptions, input) {
     it(name, function (cb) {
         this.timeout(20000);
-        let stream = gulpBenchmark(benchOptions);
-        stream.on('error', function () {
+        const stream = gulpBenchmark(benchOptions);
+        stream.on('error', () => {
             cb();
         });
         stream.write(new File({path: resolve(__dirname, input)}));
@@ -55,6 +54,7 @@ function testError (name, benchOptions, input) {
  * @return {undefined}
  */
 function jsonAssert (output) {
+    expect(output).to.be.instanceof(File);
     expect(basename(output.path)).be.eql('benchmark-results.json');
 }
 
@@ -74,7 +74,7 @@ function csvAssert (output) {
  * @return {Benchmark.Suite}
  */
 function customLoader (file) {
-    let description = require(resolve(process.cwd(), file.path));
+    const description = require(resolve(process.cwd(), file.path));
     let suite;
     if (description && description.title && description.method) {
         suite = new Benchmark.Suite(description.title);
@@ -83,30 +83,31 @@ function customLoader (file) {
     return suite;
 }
 
-test('single benchmark', {reporters: reporters.json()}, jsonAssert, '../data/benchmark-single.js');
-test('benchmark suite', {reporters: reporters.json()}, jsonAssert, '../data/benchmark-suite.js');
-test('grunt-benchmark - single function', {options: {maxTime: 0.1}, reporters: reporters.json()},
+test('single benchmark', {reporters: gulpBenchmark.reporters.json()}, jsonAssert, '../data/benchmark-single.js');
+test('benchmark suite', {reporters: gulpBenchmark.reporters.json()}, jsonAssert, '../data/benchmark-suite.js');
+test('grunt-benchmark - single function', {options: {maxTime: 0.1}, reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/grunt-benchmark-single-function.js');
-test('grunt-benchmark - single test with options', {reporters: reporters.json()},
+test('grunt-benchmark - single test with options', {reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/grunt-benchmark-single-test-with-options.js');
-test('grunt-benchmark - test suite with array of functions', {reporters: reporters.json()},
+test('grunt-benchmark - test suite with array of functions', {reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-array-of-functions.js');
-test('grunt-benchmark - test suite with array of objects', {reporters: reporters.json()},
+test('grunt-benchmark - test suite with array of objects', {reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-array-of-objects.js');
-test('grunt-benchmark - test suite with object', {reporters: reporters.json()},
+test('grunt-benchmark - test suite with object', {reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-object.js');
-test('report - etalon', {reporters: [reporters.etalon('RegExp#test'), reporters.json()]},
+test('report - etalon', {reporters: [gulpBenchmark.reporters.etalon('RegExp#test'), gulpBenchmark.reporters.json()]},
     jsonAssert, '../data/benchmark-suite.js');
-test('report - etalon errors', {failOnError: false, reporters: [reporters.etalon('RegExp#test'), reporters.json()]},
+test('report - etalon errors',
+    {failOnError: false, reporters: [gulpBenchmark.reporters.etalon('RegExp#test'), gulpBenchmark.reporters.json()]},
     jsonAssert, '../data/grunt-benchmark-test-suite-with-errors.js');
-test('report - fastest', {reporters: [reporters.fastest(), reporters.json()]},
+test('report - fastest', {reporters: [gulpBenchmark.reporters.fastest(), gulpBenchmark.reporters.json()]},
     jsonAssert, '../data/benchmark-suite.js');
-test('report - fastest no passed', {failOnError: false, reporters: [reporters.fastest(), reporters.json()]},
+test('report - fastest no passed', {failOnError: false, reporters: [gulpBenchmark.reporters.fastest(), gulpBenchmark.reporters.json()]},
     jsonAssert, '../data/benchmark-single-errors.js');
-test('report - fastest only passed', {failOnError: false, reporters: [reporters.fastest(), reporters.json()]},
+test('report - fastest only passed', {failOnError: false, reporters: [gulpBenchmark.reporters.fastest(), gulpBenchmark.reporters.json()]},
     jsonAssert, '../data/benchmark-single.js');
-test('report - csv', {reporters: reporters.csv()}, csvAssert, '../data/benchmark-suite.js');
-test('custom loader', {loaders: customLoader, reporters: reporters.json()},
+test('report - csv', {reporters: gulpBenchmark.reporters.csv()}, csvAssert, '../data/benchmark-suite.js');
+test('custom loader', {loaders: customLoader, reporters: gulpBenchmark.reporters.json()},
     jsonAssert, '../data/custom.js');
-testError('loading error', {reporters: reporters.json()}, '../data/custom.js');
-testError('running error', {reporters: reporters.json()}, '../data/grunt-benchmark-test-suite-with-errors.js');
+testError('loading error', {reporters: gulpBenchmark.reporters.json()}, '../data/custom.js');
+testError('running error', {reporters: gulpBenchmark.reporters.json()}, '../data/grunt-benchmark-test-suite-with-errors.js');

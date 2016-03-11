@@ -3,7 +3,7 @@ export default {
     tests: {
         'Return immediately (synchronous)': {
             maxTime: 0.1,
-            fn: function () {
+            fn: () => {
                 throw new Error('Test exception');
             }
         },
