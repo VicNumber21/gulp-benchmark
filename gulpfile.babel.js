@@ -53,10 +53,7 @@ gulp.task('coverage', ['lint'], () =>
         .pipe($.istanbul.hookRequire())
         .on('finish', () =>
             test()
-                .pipe($.istanbul.writeReports()) // Creating the reports after tests run
-                .on('end', () =>
-                    gulp.src('coverage/lcov.info')
-                        .pipe($.coveralls()))));
+                .pipe($.istanbul.writeReports({reporters: ['lcovonly']}))));
 
 // Bump Tasks
 gulp.task('bump:major', bump.bind(this, 'major'));
