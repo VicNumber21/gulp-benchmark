@@ -1,7 +1,7 @@
 /*!
  * The MIT License (MIT)
  *
- * gulp-benchmark - v2.0.0 - Mon Apr 18 2016 18:08:06 GMT-0400 (EDT)
+ * gulp-benchmark - v2.0.0 - Thu Apr 28 2016 21:08:32 GMT-0400 (EDT)
  * git://github.com/VicNumber21/gulp-benchmark.git
  * Original work Copyright (c) 2015-2016 Victor Portnov
  * Modified work Copyright (c) 2016 Matt Traynham <skitch920@gmail.com>
@@ -422,7 +422,7 @@ module.exports =
 	        delete testOptions.tests;
 	        tests = (0, _map2.default)(description.tests, function (test, index) {
 	            var builtTest = (0, _isFunction2.default)(test) ? { fn: test } : test;
-	            builtTest.name = builtTest.name || (0, _isNumber2.default)(index) ? '<Test #' + (index + 1) + '>' : index;
+	            builtTest.name = builtTest.name || ((0, _isNumber2.default)(index) ? '<Test #' + (index + 1) + '>' : index);
 	            return builtTest;
 	        });
 	    } else if ((0, _isFunction2.default)(description)) {

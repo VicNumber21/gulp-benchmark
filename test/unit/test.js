@@ -74,7 +74,7 @@ function csvAssert (output) {
  * @return {Benchmark.Suite}
  */
 function customLoader (file) {
-    const description = require(resolve(process.cwd(), file.path));
+    const description = require(resolve(process.cwd(), file.path)); // eslint-disable-line global-require
     let suite;
     if (description && description.title && description.method) {
         suite = new Benchmark.Suite(description.title);
